@@ -18,8 +18,8 @@
 #define PIN_UART1_TX 17   // 主臂总线 TX（STS3215 x6；17→Waveshare TX，18→Waveshare RX，同号直连）
 #define PIN_UART1_RX 18   // 主臂总线 RX
 #define PIN_UART1_DE -1   // Waveshare Adapter(A) 用 TX 自动方向，不需要 DE；-1 = 不使用
-#define PIN_UART2_TX 19   // 小车总线（可选，M6；避开主臂 15/16）
-#define PIN_UART2_RX 20
+#define PIN_UART2_TX 11   // 小车总线（避开主臂 17/18、UART0 43/44、板载 RGB 48）
+#define PIN_UART2_RX 12   // 注意：不用 GPIO19/20——那是原生 USB D-/D+，CDCOnBoot=cdc 时被占用
 #define PIN_UART2_DE 13   // Waveshare Adapter(A) 的 UART 模式不使用，保持悬空即可
 #define PIN_LED      48   // DevKitC-1 板载 RGB（NeoPixel），活动指示
 #define ARM_BUS_BAUD 1000000  // STS3215 默认 1Mbps

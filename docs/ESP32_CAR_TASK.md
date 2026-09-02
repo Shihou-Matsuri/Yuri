@@ -35,8 +35,9 @@
    - 外接电源 → **DC 9~12.6V**（与舵机电压一致），并与 ESP32 共地
    - **不要**用适配器 USB-C 接 ESP32（USB-C 仅供电脑 USB 模式）
 2. ESP32 侧用 **三根单独的杜邦线**（不要用三针排座跨越不相邻的针）：
-   - `config.h` 当前 UART2：`TX=GPIO19`、`RX=GPIO20`；若换板/换针只改这里
-   - 连接：ESP32 `GPIO19` → Waveshare UART `TX`；`GPIO20` → Waveshare UART `RX`；
+   - `config.h` 当前 UART2：`TX=GPIO11`、`RX=GPIO12`；若换板/换针只改这里
+     （**不要用 GPIO19/20**：那是原生 USB D-/D+，CDCOnBoot=cdc 时被 USB 占用）
+   - 连接：ESP32 `GPIO11` → Waveshare UART `TX`；`GPIO12` → Waveshare UART `RX`；
      ESP32 真正的 `GND` → Waveshare UART `GND`
    - 注意：GND 必须接 ESP32 板上**标 GND** 的针（通常在最下/边角），不能插到数据针。
 
