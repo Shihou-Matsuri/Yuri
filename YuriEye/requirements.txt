@@ -1,0 +1,3 @@
+# YuriEye 基线依赖（经典 CV 方案；ML 依赖见 ml/requirements.txt）
+opencv-python>=4.8
+numpy>=1.24

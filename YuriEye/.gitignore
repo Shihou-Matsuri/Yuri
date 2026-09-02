@@ -1,0 +1,22 @@
+# 数据与模型
+data/
+ml/weights/
+_cam_probe/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+
+# 工具/系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 模型权重
+*.pt
+ml/runs/
+runs/
