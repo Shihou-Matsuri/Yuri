@@ -21,6 +21,10 @@ class FeetechBus {
   bool readWord(uint8_t id, uint8_t addr, int16_t& value, uint32_t timeoutMs = 30);
   bool writeWord(uint8_t id, uint8_t addr, int16_t value, uint32_t timeoutMs = 30);
   bool writeByte(uint8_t id, uint8_t addr, uint8_t value, uint32_t timeoutMs = 30);
+  // 电机恒速模式速度写入：speed 为有符号值，内部做 BIT15 幅值编码
+  // （Feetech 电机模式速度寄存器按"BIT15=方向 + 低15位=幅值"解释，不是补码；
+  //   负值若直接按补码写会被当成反向满速）。范围 ±0x7FFF，越界返回 false。
+  bool writeMotorSpeed(uint8_t id, uint8_t addr, int16_t speed, uint32_t timeoutMs = 30);
 
   void flushRx();
   // 单线 TTL 环回测试：发 8 字节 0xA5，统计 RX 收到多少字节（判断 TX/RX 是否都在线上）

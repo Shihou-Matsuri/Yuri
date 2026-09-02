@@ -78,12 +78,19 @@ void tickMotion() {
     motion.setTorque(false);
   }
 
-  // 小车看门狗：断线/停发指令后停止运动并关力矩
-  if (car.interpActive() && car.watchdogExpired() && !carWatchdogTripped) {
+  // 小车看门狗：断线/停发指令后停止运动。
+  // 位置插值中 -> estop + 扭矩关（原逻辑）；电机恒速行驶中（car_drive）-> 清 0 速刹停
+  // 并保持扭矩（防溜坡），比扭矩关断更安全——车会稳稳停住而不是自由滑行。
+  if ((car.interpActive() || car.driveActive()) && car.watchdogExpired() && !carWatchdogTripped) {
     carWatchdogTripped = true;
-    Serial.println("[SAFETY] car watchdog expired -> stop & torque off");
-    car.estop();
-    car.setTorque(false);
+    if (car.driveActive()) {
+      Serial.println("[SAFETY] car drive watchdog -> zero speed (hold torque)");
+      car.driveZero();
+    } else {
+      Serial.println("[SAFETY] car watchdog expired -> stop & torque off");
+      car.estop();
+      car.setTorque(false);
+    }
   }
 }
 

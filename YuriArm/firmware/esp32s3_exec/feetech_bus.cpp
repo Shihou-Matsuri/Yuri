@@ -162,4 +162,18 @@ bool FeetechBus::writeByte(uint8_t id, uint8_t addr, uint8_t value, uint32_t tim
   return write(id, addr, &value, 1, timeoutMs);
 }
 
+bool FeetechBus::writeMotorSpeed(uint8_t id, uint8_t addr, int16_t speed, uint32_t timeoutMs) {
+  uint16_t enc;
+  if (speed < 0) {
+    int32_t mag = -(int32_t)speed;
+    if (mag > 0x7FFF) return false;
+    enc = (uint16_t)(0x8000u | (uint16_t)mag);  // BIT15 方向位 + 低 15 位幅值
+  } else {
+    if (speed > 0x7FFF) return false;
+    enc = (uint16_t)speed;
+  }
+  uint8_t b[2] = {(uint8_t)(enc & 0xFF), (uint8_t)((enc >> 8) & 0xFF)};
+  return write(id, addr, b, 2, timeoutMs);
+}
+
 

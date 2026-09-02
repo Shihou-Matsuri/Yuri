@@ -26,10 +26,16 @@
 
 // ===================== 小车总线（UART2，可选 M6） =====================
 #define NUM_CAR_SERVOS 3
-// 小车 3 个舵机的 ID；若实际 ID 不是 1/2/3，只改这里或先用 USB 模式查一下
-static const uint8_t CAR_SERVO_IDS[NUM_CAR_SERVOS] = {1, 2, 3};
+// 小车 3 个舵机的 ID；LeKiwi kiwi 全向底盘为 7/8/9（若换底盘只改这里）
+static const uint8_t CAR_SERVO_IDS[NUM_CAR_SERVOS] = {7, 8, 9};
 // 小车测试默认中点：0~4095 的原始位置，舵机在伺服模式下通常 2048 为中间
 #define CAR_SERVO_MID_RAW 2048
+
+// ===================== 小车电机恒速模式（car_drive：kiwi 全向轮） =====================
+#define REG_RUN_MODE       33   // 0x21 运行模式：1 = 电机恒速模式（STS3215）
+#define REG_MOVING_SPEED   46   // 0x2E 速度（电机模式；BIT15=方向位，低 15 位=幅值）
+#define CAR_MODE_MOTOR      1   // REG_RUN_MODE 写 1 进入电机恒速模式
+#define CAR_SPEED_LIMIT  1800   // |速度|上限，与 PC 侧 kiwi_drive.py MAX_RAW_SPEED 对齐
 
 // ===================== 关节表（与 PC 侧标定 zgq_follower_arm.json 一致，2026-09-01） =====================
 // 归一化单位：身体关节 -100..100（RANGE_M100_100），gripper 0..100（RANGE_0_100），

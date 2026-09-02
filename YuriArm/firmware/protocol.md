@@ -50,14 +50,32 @@
 | telemetry | 遥测（位置/负载/电压/温度） | {} |
 | bus_diag | 诊断 UART1/UART2：回显 + 逐 ID ping | {} |
 | car_status | 小车遥测（id/position/load/电压/温度） | {} |
-| car_move | 小车按原始位置移动 | targets={"1":...,"2":...,"3":...}, duration |
+| car_move | 小车按原始位置移动（伺服模式） | targets={"1":...,"2":...,"3":...}, duration |
 | car_home | 小车回到中点 2048 | duration |
 | car_torque | 小车力矩开关 | on=true/false |
 | car_stop / car_resume | 小车急停/恢复 | {} |
+| car_drive | 小车电机恒速模式速度控制（kiwi 全向轮） | speeds={"7":300,"8":-150,"9":0} 或 raw=[...], 范围 ±1800 |
 
 > 无线版把 `move_joints`/`pick` 解析为本地轨迹缓冲（每关节时间戳+目标），`GO` 语义由
 > `move_joints` 本身承担（收到即开始执行）；`estop` 由 ESP32 侧 200ms 看门狗 + 本地负载
 > 监测兜底。`run`/`scan`/`calibrate` 属于笔记本侧，不下发固件。
+
+### car_drive（小车电机恒速模式，2026-09-02 新增）
+
+三轮 kiwi 全向轮等**连续旋转轮**无法用位置模式（car_move 的 0~4095 插值）驱动，
+必须走电机恒速模式：写运行模式寄存器 0x21=1 后，用速度寄存器 0x2E 控制轮速
+（BIT15=方向位，低 15 位=幅值，**不是补码**——负速度编码为 `0x8000|abs(v)`）。
+
+- `car_drive` 是**持续速度**语义（非插值）：收到即写速度，车保持该速度直到下一条
+  car_drive / car_stop / 看门狗超时。笔记本应以固定频率（建议 ≥2Hz，遥控建议 10~20Hz）
+  持续下发速度或心跳；**500ms 无任何指令 → 固件自动清 0 速刹停**（保持扭矩防溜坡）。
+- 首次 car_drive 自动切电机模式（幂等）；car_move/car_home 前若在电机模式会自动切回
+  伺服模式。两种指令流任意顺序安全，但**不要混用**（模式切换有总线开销）。
+- 速度值范围 ±1800（CAR_SPEED_LIMIT，与 PC 侧 `kiwi_drive.py` 的 MAX_RAW_SPEED 一致）；
+  运动学换算（vx/vy/omega → 每轮 raw speed）在**笔记本侧**完成，固件只写寄存器。
+- `car_status` 新增 `drive_mode`（是否已切电机模式）与 `drive_active`（是否行驶中）。
+- 安全：全局 `estop` 会联动小车清速刹停并置 estop（需 `resume` 后才能再 car_drive，
+  速度不自动恢复）；`car_stop` = 刹停 + 扭矩关。
 
 ## 4. 安全（固件硬性要求）
 

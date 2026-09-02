@@ -6,7 +6,7 @@ static const char* kCommands[] = {
     "ping", "status", "move_joints", "move_to_pose", "home",
     "open_gripper", "close_gripper", "estop", "resume", "telemetry",
     "bus_diag", "bus_scan", "bus_raw", "car_status", "car_move",
-    "car_home", "car_torque", "car_stop", "car_resume",
+    "car_home", "car_torque", "car_stop", "car_resume", "car_drive",
 };
 static const int kNumCommands = (int)(sizeof(kCommands) / sizeof(kCommands[0]));
 
@@ -76,8 +76,8 @@ static void buildTelemetry(FeetechBus& bus, MotionController& motion, JsonDocume
   if (!loadOk) resp["result"]["load_read_error"] = true;
 }
 
-// 单路总线诊断：环回测试 + 逐电机 ping
-static void diagBus(JsonDocument& resp, const char* key, FeetechBus& b) {
+// 单路总线诊断：环回测试 + 逐电机 ping（uart1 按主臂 JOINTS，uart2 按小车 CAR_SERVO_IDS）
+static void diagBus(JsonDocument& resp, const char* key, FeetechBus& b, bool carBus = false) {
   uint8_t echoBuf[16];
   size_t echoCount = 0;
   bool echoOk = b.echoTest(echoBuf, 16, echoCount, 25);
@@ -91,11 +91,20 @@ static void diagBus(JsonDocument& resp, const char* key, FeetechBus& b) {
   }
   o["echo_hex"] = hex;
   JsonArray motors = o["motors"].to<JsonArray>();
-  for (int i = 0; i < NUM_JOINTS; i++) {
-    JsonObject m = motors.add<JsonObject>();
-    m["name"] = JOINTS[i].name;
-    m["id"] = JOINTS[i].id;
-    m["ping"] = b.ping(JOINTS[i].id, 25);
+  if (!carBus) {
+    for (int i = 0; i < NUM_JOINTS; i++) {
+      JsonObject m = motors.add<JsonObject>();
+      m["name"] = JOINTS[i].name;
+      m["id"] = JOINTS[i].id;
+      m["ping"] = b.ping(JOINTS[i].id, 25);
+    }
+  } else {
+    for (int i = 0; i < NUM_CAR_SERVOS; i++) {
+      JsonObject m = motors.add<JsonObject>();
+      m["name"] = String("car_") + String(CAR_SERVO_IDS[i]);
+      m["id"] = CAR_SERVO_IDS[i];
+      m["ping"] = b.ping(CAR_SERVO_IDS[i], 25);
+    }
   }
 }
 
@@ -175,6 +184,8 @@ static void buildCarTelemetry(CarMotionController& car, JsonDocument& resp) {
   resp["result"]["temperature"] = tOk ? t : (float)0;
   resp["result"]["torque_on"] = car.torqueOn();
   resp["result"]["active"] = car.interpActive();
+  resp["result"]["drive_mode"] = car.driveModeOn();   // 舵机是否已切电机恒速模式
+  resp["result"]["drive_active"] = car.driveActive(); // 是否正在按 car_drive 速度行驶
   if (!posOk) resp["result"]["pos_read_error"] = true;
   if (!loadOk) resp["result"]["load_read_error"] = true;
 }
@@ -320,12 +331,16 @@ bool handleCommand(FeetechBus& bus, FeetechBus& bus2, MotionController& motion,
   } else if (strcmp(cmd, "estop") == 0) {
     motion.estop();
     motion.setTorque(false);
+    // 全局急停联动小车：清速度刹停（保扭矩防溜坡）+ 置 estop（后续 car_drive 被拒）
+    if (car.driveActive()) car.driveZero();
+    car.estop();
     out["ok"] = true;
     out["result"]["estop"] = true;
     keepalive = true;
   } else if (strcmp(cmd, "resume") == 0) {
     motion.resume();
     motion.setTorque(true);
+    car.resume();  // 小车恢复响应，但速度不自动恢复——需笔记本重新下发 car_drive
     out["ok"] = true;
     out["result"]["estop"] = false;
     keepalive = true;
@@ -341,9 +356,9 @@ bool handleCommand(FeetechBus& bus, FeetechBus& bus2, MotionController& motion,
     bus.swapPins();
     diagBus(out, "uart1_swap", bus);
     bus.swapPins();  // 恢复固件默认接线方向
-    diagBus(out, "uart2", bus2);
+    diagBus(out, "uart2", bus2, /*carBus=*/true);
     bus2.swapPins();
-    diagBus(out, "uart2_swap", bus2);
+    diagBus(out, "uart2_swap", bus2, /*carBus=*/true);
     bus2.swapPins();  // 恢复固件默认接线方向
     keepalive = true;
   } else if (strcmp(cmd, "bus_scan") == 0) {
@@ -436,7 +451,60 @@ bool handleCommand(FeetechBus& bus, FeetechBus& bus2, MotionController& motion,
       out["error"] = car.estopActive() ? "car estop active" : "car move failed";
     }
     keepalive = true;
+  } else if (strcmp(cmd, "car_drive") == 0) {
+    // 电机恒速模式速度控制（kiwi 全向轮）：持续速度，非插值。
+    // params: {"speeds":{"7":300,"8":-150,"9":0}} 或 {"raw":[300,-150,0]}
+    // 值 = 有符号 raw speed，范围 ±CAR_SPEED_LIMIT；车保持该速度直到下一条
+    // car_drive / car_stop / 看门狗超时（500ms 无指令自动清 0 速刹停）。
+    if (car.interpActive()) {
+      out["error"] = "car interp active (wait or car_stop first)";
+    } else {
+      int16_t speeds[NUM_CAR_SERVOS] = {0, 0, 0};
+      bool any = false;
+      JsonObject speedsObj = params["speeds"].as<JsonObject>();
+      if (!speedsObj.isNull()) {
+        for (JsonPair kv : speedsObj) {
+          int id = (int)strtol(kv.key().c_str(), nullptr, 10);
+          int idx = findCarIndex((uint8_t)id);
+          if (idx < 0) {
+            out["error"] = "unknown car servo id";
+            out["result"] = (const char*)nullptr;
+            serializeJson(out, resp);
+            return true;
+          }
+          speeds[idx] = (int16_t)kv.value().as<int>();
+          any = true;
+        }
+      } else if (params["raw"].is<JsonArray>()) {
+        JsonArray rawArr = params["raw"].as<JsonArray>();
+        if (rawArr.size() > NUM_CAR_SERVOS) {
+          out["error"] = "too many car speeds";
+        } else {
+          for (size_t i = 0; i < rawArr.size(); i++) {
+            speeds[i] = (int16_t)rawArr[i].as<int>();
+            any = true;
+          }
+        }
+      }
+      if (!any) {
+        out["error"] = "missing car speeds";
+      } else if (car.writeDriveSpeeds(speeds)) {
+        out["ok"] = true;
+        JsonArray motors = out["result"]["motors"].to<JsonArray>();
+        for (int i = 0; i < NUM_CAR_SERVOS; i++) {
+          JsonObject m = motors.add<JsonObject>();
+          m["id"] = CAR_SERVO_IDS[i];
+          m["speed"] = speeds[i];
+        }
+      } else {
+        out["error"] = car.estopActive() ? "car estop active (resume first)"
+                                         : "car drive failed";
+      }
+    }
+    keepalive = true;
   } else if (strcmp(cmd, "car_stop") == 0) {
+    // 急停：先清速度刹停（避免扭矩切断瞬间轮子自由滑），再置 estop + 扭矩关
+    if (car.driveActive()) car.driveZero();
     car.estop();
     car.setTorque(false);
     out["ok"] = true;
