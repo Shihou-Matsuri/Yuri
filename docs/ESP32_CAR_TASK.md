@@ -60,6 +60,10 @@
 & E:\Anaconda\envs\lerobot\python.exe YuriArm\tools\esp32_ble.py --cmd car_stop
 
 # 5. 三轮回正后再全向点动：ID7=300 时整车应滑向"前左"（按 kiwi_drive.py 标定）
+
+# 6. 键盘无线遥控（车体抬空首测三轮方向后落地）
+& E:\Anaconda\envs\lerobot\python.exe YuriChassis\car_remote.py
+#   W/S前后 A/D横移 Z/X旋转 空格停 E急停 Q退出
 ```
 
 > `car_drive` 是持续速度：发完指令后 500ms 内没有新指令/心跳，固件自动清 0 速刹停。
