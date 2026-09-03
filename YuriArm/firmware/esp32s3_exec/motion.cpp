@@ -108,11 +108,11 @@ bool MotionController::moveToNorm(const float targets[NUM_JOINTS], uint32_t dura
   if (estop_) return false;
 
   if (interp_) {
-    // 插值中收到新目标（遥操作高频跟随）：不从物理位置重置 from_，
-    // 而是从"当前插值位置"平滑续到新目标，避免 readAllPositions 滞后造成的抽搐。
-    // 当前插值进度 = from_ + delta_*stepsDone_
+    // 插值中收到新目标（遥操作高频跟随）：从"实际最后写入的位置"续到新目标。
+    // 不能从 delta_*stepsDone_ 推算——tick() 是限速推进（每 tick ≤MAX_RAW_PER_TICK），
+    // 推算位置会超前实际写入位置，误差在续目标时累积导致大幅动作卡死。
     for (int i = 0; i < NUM_JOINTS; i++) {
-      from_[i] = (int16_t)lroundf(from_[i] + delta_[i] * (float)stepsDone_);
+      from_[i] = lastRaw_[i];
       to_[i] = normToRaw(JOINTS[i], targets[i]);
     }
   } else {
@@ -136,13 +136,13 @@ bool MotionController::moveToNorm(const float targets[NUM_JOINTS], uint32_t dura
 bool MotionController::tick() {
   if (!interp_) return false;
   // 限速插值：每 tick 每关节最多走 MAX_RAW_PER_TICK，朝 to_ 方向推进。
-  // 目标近则 1 tick 到位（低延迟）；目标远则匀速追踪（不超舵机物理速度，
-  // 避免"固件以为到位、舵机实际没到"的累积滞后——那是大幅动作卡死的根因）。
+  // 从"实际最后写入位置"lastRaw_ 起步（不能从 from_+delta_*stepsDone_ 推算，
+  // 限速推进后推算位置会偏离实际）。目标近则 1 tick 到位；目标远则匀速追踪。
   int16_t raw[NUM_JOINTS];
   bool done = true;
   for (int i = 0; i < NUM_JOINTS; i++) {
     int16_t target = to_[i];
-    int16_t cur = (int16_t)lroundf(from_[i] + delta_[i] * (float)stepsDone_);
+    int16_t cur = lastRaw_[i];
     int32_t diff = (int32_t)target - (int32_t)cur;
     if (diff > MAX_RAW_PER_TICK) {
       cur += MAX_RAW_PER_TICK;
@@ -155,7 +155,7 @@ bool MotionController::tick() {
     }
     raw[i] = cur;
   }
-  writeGoalRaw(raw);
+  writeGoalRaw(raw);  // 内部 memcpy 更新 lastRaw_
   stepsDone_++;
   if (done) {
     // 全部到位：精确写最终目标并结束插值
