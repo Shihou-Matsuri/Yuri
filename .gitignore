@@ -19,4 +19,5 @@ YuriEye/ml/weights/
 *.cache
 *.npy
 *.spec
+node_modules/
 lerobot_venv312/

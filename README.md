@@ -11,6 +11,7 @@
 |---|---|
 | `YuriArm/` | SO-101 机械臂：ESP32-S3 固件（`firmware/esp32s3_exec/`）+ 遥操作桥（`yuriarm/`+`tools/leader_remote.py`） |
 | `YuriChassis/` | 三轮 kiwi 底盘：运动学 + WiFi 键盘遥控（`car_remote.py` / `dual_remote.py` 臂+轮同控） |
+| `YuriConsole/` | 综合遥控台 GUI（Vue3 + Naive UI，花信/祭双主题；规范见 `docs/REMOTE_CONSOLE_REQ.md`） |
 | `YuriEye/` | 彩色立方体识别（YOLOv8 + 相机标定），感知层 |
 | `docs/REMOTE_CONSOLE_REQ.md` | 综合遥控台需求与 MatsuriVoice GUI 风格规范（U1 定稿，U2 待实现） |
 | `docs/gui-reference/` | MatsuriVoice 风格参考：双主题源码 + 页面样板 + 移植说明 |
@@ -27,7 +28,7 @@
 | **机械臂 + 小车同时控制（dual_remote）** | ✅ 真机验证：臂跟手 + 轮键盘同跑；空格停 / E 轮子急停 / Q 刹停退出 |
 | BLE 通道 | 🔇 已禁用（用户决策：只留 WiFi） |
 | YuriEye 视觉识别 | 🔜 待与机械臂集成 |
-| 综合遥控台 GUI | ⏳ U1 文档已定稿，U2 待实现（见 `docs/REMOTE_CONSOLE_REQ.md`） |
+| 综合遥控台 GUI（YuriConsole） | 🟡 U2 MVP：A–E 五区 + 双主题，mock 可用；真机/D 视觉/打包待续 |
 
 ## 架构
 
@@ -75,6 +76,15 @@ C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe dual_remote.py
 - 键盘程序必须命令行跑（PyCharm 抓不到键）。
 - 或直接运行打包 exe：`YuriChassis/release/DualRemote.exe`（内置配置；纯轮子用 `CarRemote.exe`）。
 
+### 综合遥控台 GUI（YuriConsole）
+
+```powershell
+cd YuriConsole
+C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe backend\main.py --mock
+```
+
+浏览器打开 `http://127.0.0.1:8766`（mock 离线演示；去 `--mock` 为真机模式）。详见 `YuriConsole/README.md`。
+
 ### 烧录固件
 
 ```powershell
@@ -100,4 +110,5 @@ $HOME/.arduino-cli/arduino-cli.exe upload -p COM8 --fqbn esp32:esp32:esp32s3:CDC
 - `YuriArm/firmware/protocol.md`：ESP32 JSON 协议（含 teleop_joints）
 - `YuriArm/docs/ARM_TELEOP_TASK.md`：主动臂遥控从动臂交接任务
 - `docs/ESP32_CAR_TASK.md`：ESP32 遥控小车任务
+- `docs/REMOTE_CONSOLE_REQ.md`：综合遥控台需求 + MatsuriVoice GUI 风格规范（U1 定稿）
 - `docs/ROADMAP.md`：总体路线
