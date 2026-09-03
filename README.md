@@ -27,7 +27,7 @@
         ▼
    ESP32-S3（无线执行端：插值 / 看门狗 / 本地急停）
         │
-        ├── UART1 ＋ Waveshare Adapter(A) ──► 主臂 6×STS3215（已验证）
+        ├── UART1 ＋ Waveshare Adapter(A) ──► 从动臂 6×STS3215（已验证）
         └── UART2 ＋ Waveshare Adapter(A) ──► 小车 3 舵机（待接，见任务文档）
 ```
 

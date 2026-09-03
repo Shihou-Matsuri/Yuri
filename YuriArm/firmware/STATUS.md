@@ -18,7 +18,7 @@
 
 ## 当前状态 ⚠️
 - 真机通过 **COM19（ESP32-S3 板载 CH343 USB-UART，对应 UART0）** 供电运行并烧录/测试；
-  原生 USB-Serial/JTAG 口是 COM18。主臂总线走 UART1（GPIO17/18）。
+  原生 USB-Serial/JTAG 口是 COM18。从动臂总线走 UART1（GPIO17/18）。
 - `uart1` 正常（6 舵机 ping=true），`uart1_swap` 为交叉方向故 `false`（正常）；
   `uart2` 尚未接小车，`false`（正常）。
 
@@ -27,7 +27,7 @@
 2. **关键提醒**：STS3215 总线是**单线 TTL 半双工**（VCC/GND/SIG，1Mbaud）。
    Waveshare Bus Servo Adapter (A) 本身就带方向控制，**不需要 MAX485/DE 脚**；
    ESP32 接它板上的 UART 口，跳线 A，供电 9~12.6V。
-3. 主臂 UART1：TX=GPIO17、RX=GPIO18、GND；Waveshare UART 口 TX→TX、RX→RX（官方同号接法）
+3. 从动臂 UART1：TX=GPIO17、RX=GPIO18、GND；Waveshare UART 口 TX→TX、RX→RX（官方同号接法）
 4. 下一步：F3 close_gripper/pick → F7 YuriArm `Esp32Arm` 后端（走 TCP）+ 多通道接线规整
 
 ## 常用命令

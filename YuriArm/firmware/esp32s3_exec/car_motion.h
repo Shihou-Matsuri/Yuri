@@ -3,7 +3,7 @@
 #include "config.h"
 #include "feetech_bus.h"
 
-// 小车串行总线控制器（与主臂 MotionController 类似，但面向 3 个 arbitrary ID）。
+// 小车串行总线控制器（与从动臂 MotionController 类似，但面向 3 个 arbitrary ID）。
 // 同时支持两种互斥的控制模式：
 //   1. 位置模式（servo）：writeGoalRaw / moveToRaw —— 0~4095 插值，舵机伺服模式；
 //   2. 电机恒速模式（motor）：enterDriveMode + writeDriveSpeeds —— kiwi 全向轮等

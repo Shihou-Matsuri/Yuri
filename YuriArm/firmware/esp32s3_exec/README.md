@@ -2,7 +2,7 @@
 
 > 里程碑 M3.5（方案设计.md）/ F1 固件基线（2026-09-02 已烧录验证）。让 ESP32-S3 成为车上"无线执行端"：
 > 笔记本（YuriArm/lerobot）发 JSON 指令（**TCP / USB 串口 / BLE 三通道**），ESP32 本地执行
-> （插值 + 看门狗 + 本地急停），通过总线适配器驱动主臂 6×STS3215。
+> （插值 + 看门狗 + 本地急停），通过总线适配器驱动从动臂 6×STS3215。
 >
 > **已验证（真机 COM18）**：三通道 ping/status/telemetry/move_joints 全通；
 > BLE 大响应分片重组正常；心跳喂狗正常、看门狗不再误触发。
@@ -40,7 +40,7 @@ arduino-cli upload -p COM17 --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc \
 ## 接线（Waveshare Bus Servo Adapter (A)）
 
 ```
-ESP32-S3                     Waveshare Adapter (A)      主臂总线（STS3215）
+ESP32-S3                     Waveshare Adapter (A)      从动臂总线（STS3215）
 GPIO17 (UART1_TX) ─────────► UART 口 TX                  ─┐
 GPIO18 (UART1_RX) ─────────► UART 口 RX                  ├─ 共地；舵机电源经适配器
 GND ───────────────────────► UART 口 GND                 ┘

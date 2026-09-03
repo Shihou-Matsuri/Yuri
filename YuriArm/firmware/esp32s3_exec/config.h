@@ -15,10 +15,10 @@
 #define DEFAULT_ESTOP_LOAD 1500.0f // Present_Load 绝对值阈值（5V 工况，见 config.py 注释）
 
 // ===================== 引脚（ESP32-S3-DevKitC-1 默认；换板只改这里） =====================
-#define PIN_UART1_TX 17   // 主臂总线 TX（STS3215 x6；17→Waveshare TX，18→Waveshare RX，同号直连）
-#define PIN_UART1_RX 18   // 主臂总线 RX
+#define PIN_UART1_TX 17   // 从动臂总线 TX（STS3215 x6；17→Waveshare TX，18→Waveshare RX，同号直连）
+#define PIN_UART1_RX 18   // 从动臂总线 RX
 #define PIN_UART1_DE -1   // Waveshare Adapter(A) 用 TX 自动方向，不需要 DE；-1 = 不使用
-#define PIN_UART2_TX 11   // 小车总线（避开主臂 17/18、UART0 43/44、板载 RGB 48）
+#define PIN_UART2_TX 11   // 小车总线（避开从动臂 17/18、UART0 43/44、板载 RGB 48）
 #define PIN_UART2_RX 12   // 注意：不用 GPIO19/20——那是原生 USB D-/D+，CDCOnBoot=cdc 时被占用
 #define PIN_UART2_DE 13   // Waveshare Adapter(A) 的 UART 模式不使用，保持悬空即可
 #define PIN_LED      48   // DevKitC-1 板载 RGB（NeoPixel），活动指示

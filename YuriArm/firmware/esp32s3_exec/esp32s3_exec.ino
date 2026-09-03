@@ -11,7 +11,7 @@
 #include "car_motion.h"
 #include "protocol.h"
 
-HardwareSerial ArmSerial(1);   // UART1 -> 主臂总线（6x STS3215 via Waveshare Adapter）
+HardwareSerial ArmSerial(1);   // UART1 -> 从动臂总线（6x STS3215 via Waveshare Adapter）
 FeetechBus bus1(ArmSerial, PIN_UART1_DE, PIN_UART1_RX, PIN_UART1_TX, ARM_BUS_BAUD);
 HardwareSerial CarSerial(2);   // UART2 -> 小车总线（3 舵机，可选）
 FeetechBus bus2(CarSerial, PIN_UART2_DE, PIN_UART2_RX, PIN_UART2_TX, ARM_BUS_BAUD);

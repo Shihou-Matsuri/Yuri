@@ -23,7 +23,7 @@
 - `config.h`：`CAR_SERVO_IDS = {7, 8, 9}`；`REG_RUN_MODE(0x21)/REG_MOVING_SPEED(0x2E)`
 - `MotionController` 与 `CarMotionController` 共用同一 `FeetechBus` 协议（`feetech_bus.*`），
   总线层新增 `writeMotorSpeed`（BIT15 幅值编码，负速度=0x8000|abs(v)，非补码）。
-- 主臂（UART1）已验证可用，`txPacket` 已修复（不再清空 RX）。
+- 从动臂（UART1）已验证可用，`txPacket` 已修复（不再清空 RX）。
 - 固件安全语义：car_drive 行驶中 500ms 无指令 → **清 0 速刹停（保持扭矩）**；全局
   `estop` 联动小车刹停+置 estop；`bus_diag` 的 uart2 已按小车 ID（7/8/9）ping。
 
@@ -72,9 +72,9 @@
 
 ## 已知约束 / 注意事项
 
-- 小车总线与主臂共用同一套 Feetech 协议；**同一时刻只能有一个总线做长动作**，
+- 小车总线与从动臂共用同一套 Feetech 协议；**同一时刻只能有一个总线做长动作**，
   否则会因半双工总线并发冲突（建议保持互斥，或由状态机串行调度）。
-  遥控/导航期间主臂不得同时运动；机械臂抓取阶段小车必须已刹停（car_stop 或 0 速）。
+  遥控/导航期间从动臂不得同时运动；机械臂抓取阶段小车必须已刹停（car_stop 或 0 速）。
 - 舵机 ID / 供电：先用 USB 模式（B）确认 ID 与供电，再切回 A 模式接 ESP32。
 - `bus_diag` 的 uart2 分支已按小车 ID（7/8/9）ping；`bus_scan` 仍只扫 UART1。
 - 本地过载急停阈值在 `config.h` 的 `DEFAULT_ESTOP_LOAD`，小车可单独用 `car_stop`。

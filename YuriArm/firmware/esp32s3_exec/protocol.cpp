@@ -76,7 +76,7 @@ static void buildTelemetry(FeetechBus& bus, MotionController& motion, JsonDocume
   if (!loadOk) resp["result"]["load_read_error"] = true;
 }
 
-// 单路总线诊断：环回测试 + 逐电机 ping（uart1 按主臂 JOINTS，uart2 按小车 CAR_SERVO_IDS）
+// 单路总线诊断：环回测试 + 逐电机 ping（uart1 按从动臂 JOINTS，uart2 按小车 CAR_SERVO_IDS）
 static void diagBus(JsonDocument& resp, const char* key, FeetechBus& b, bool carBus = false) {
   uint8_t echoBuf[16];
   size_t echoCount = 0;
