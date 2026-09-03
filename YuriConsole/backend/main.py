@@ -27,8 +27,10 @@ _DIST = _BUNDLE / "frontend" / "dist"
 
 sys.path.insert(0, str(_BACKEND))
 from console_core import ConsoleCore  # noqa: E402
+from wired_car import WiredCarCore  # noqa: E402
 
 core = ConsoleCore(mock=False)
+wired = WiredCarCore()
 app = FastAPI(title="Yuri 综合遥控台")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
@@ -49,7 +51,7 @@ class EnabledReq(BaseModel):
 
 @app.get("/api/state")
 def state() -> dict:
-    return core.state()
+    return {**core.state(), "wired": wired.state()}
 
 
 @app.post("/api/connect")
@@ -104,6 +106,40 @@ def arm_enabled(req: EnabledReq) -> JSONResponse:
 @app.get("/api/logs")
 def logs(level: str | None = None) -> list[dict]:
     return core.get_logs(level)
+
+
+class WiredConnectReq(BaseModel):
+    port: str | None = None
+
+
+@app.post("/api/wired/connect")
+def wired_connect(req: WiredConnectReq) -> JSONResponse:
+    msg = wired.connect(req.port)
+    return JSONResponse({"ok": msg == "ok", "msg": msg})
+
+
+@app.post("/api/wired/disconnect")
+def wired_disconnect() -> JSONResponse:
+    wired.disconnect()
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/wired/press")
+def wired_press(req: KeyReq) -> JSONResponse:
+    wired.press(req.key)
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/wired/release")
+def wired_release() -> JSONResponse:
+    wired.release()
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/wired/estop")
+def wired_estop() -> JSONResponse:
+    wired.estop()
+    return JSONResponse({"ok": True})
 
 
 # ---- 静态托管（前端 npm run build 产物）----

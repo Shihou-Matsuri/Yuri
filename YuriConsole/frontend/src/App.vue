@@ -10,6 +10,7 @@ import ArmPanel from './components/ArmPanel.vue'
 import CarPanel from './components/CarPanel.vue'
 import VisionPanel from './components/VisionPanel.vue'
 import SafetyLogPanel from './components/SafetyLogPanel.vue'
+import WiredCarPanel from './components/WiredCarPanel.vue'
 
 const consoleStore = useConsole()
 const themeStore = useThemeStore()
@@ -72,12 +73,13 @@ onBeforeUnmount(() => clearInterval(timer))
       </n-layout-header>
 
       <n-layout-content content-style="padding: 18px 20px; max-width: 1180px; margin: 0 auto">
-        <n-collapse :default-expanded-names="['A','B','C','E']" arrow-placement="right">
+        <n-collapse :default-expanded-names="['A','B','C','E','F']" arrow-placement="right">
           <n-collapse-item title="A · 连接与状态" name="A"><ConnectionPanel /></n-collapse-item>
           <n-collapse-item title="B · 机械臂" name="B"><ArmPanel /></n-collapse-item>
           <n-collapse-item title="C · 小车" name="C"><CarPanel /></n-collapse-item>
           <n-collapse-item title="D · 视觉（YuriEye）" name="D"><VisionPanel /></n-collapse-item>
           <n-collapse-item title="E · 安全与日志" name="E"><SafetyLogPanel /></n-collapse-item>
+          <n-collapse-item title="F · 有线相机小车（CameraCar）" name="F"><WiredCarPanel /></n-collapse-item>
         </n-collapse>
       </n-layout-content>
     </n-layout>
