@@ -65,6 +65,9 @@ python camera_car_drive.py --port COM21
 
 也可以直接运行本目录的 `camera_car_drive.bat`，它已默认使用 `COM21`。
 
+Windows 单文件发布包位于 `YuriChassis/release/CameraCarController.exe`，
+旁边提供对应的 `.sha256` 校验文件。
+
 ## 无线键盘遥控
 
 WiFi 和 BLE 都复用 `kiwi_drive.py` 的运动学与键位映射，目标是 ESP32-S3 无线执行端。
