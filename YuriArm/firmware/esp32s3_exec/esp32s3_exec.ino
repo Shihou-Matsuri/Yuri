@@ -24,6 +24,7 @@ static uint32_t lastTickMs = 0;
 static uint32_t lastLoadCheckMs = 0;
 static bool watchdogTripped = false;
 static bool carWatchdogTripped = false;
+#define MAX_LINES_PER_CYCLE 16  // 每轮 handleStream 最多处理条数（防积压饿死 heartbeat/tick）
 
 // ---- BLE 指令通道 ----
 #define BLE_SERVICE_UUID "0000ff00-0000-1000-8000-00805f9b34fb"
@@ -120,7 +121,12 @@ bool processCommandLine(const String& line, String& resp, bool& respond) {
 
 // 从任意 Stream（USB 串口 / TCP）读行分隔 JSON 指令并回包；同一套协议，传输无关
 void handleStream(Stream& s) {
-  while (s.available()) {
+  // 每轮最多处理 MAX_LINES_PER_CYCLE 条：防止单通道积压海量指令时
+  // 主循环长期困在解析/总线读写里，导致 heartbeat 与 tickMotion 得不到及时执行
+  // （积压时 heartbeat 排在队尾，超 WATCHDOG_MS 触发误急停 = 大幅动作卡死）。
+  int processed = 0;
+  while (s.available() && processed < MAX_LINES_PER_CYCLE) {
+    processed++;
     char c = (char)s.read();
     if (c == '\n') {
       lineBuf.trim();
@@ -133,7 +139,7 @@ void handleStream(Stream& s) {
         }
       }
       lineBuf = "";
-    } else if (c != '\r') {
+    } else if (c != 13) {
       if (lineBuf.length() >= 512) lineBuf = "";
       lineBuf += c;
     }
