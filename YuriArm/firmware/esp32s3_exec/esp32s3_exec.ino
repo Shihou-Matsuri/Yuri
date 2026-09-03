@@ -72,8 +72,9 @@ void tickMotion() {
     }
   }
 
-  // 看门狗：200ms 无指令 -> 停止运动并关力矩（协议.md 硬性要求）
-  if (motion.interpActive() && motion.watchdogExpired() && !watchdogTripped) {
+  // 看门狗：500ms 无指令 -> 停止运动并关力矩（协议.md 硬性要求）
+  // 覆盖插值中 + 直写遥操作中（teleopActive）两种运动状态；heartbeat/控制帧都喂狗。
+  if ((motion.interpActive() || motion.teleopActive()) && motion.watchdogExpired() && !watchdogTripped) {
     watchdogTripped = true;
     Serial.println("[SAFETY] watchdog expired -> stop & torque off");
     motion.estop();
@@ -101,8 +102,8 @@ void tickMotion() {
 bool processCommandLine(const String& line, String& resp, bool& respond) {
   respond = true;
   if (line.indexOf("heartbeat") >= 0 || line.indexOf("car_drive") >= 0
-      || line.indexOf("move_joints") >= 0) {
-    // 心跳/保活 + car_drive（20Hz 持续速度）+ move_joints（遥操作 20Hz 高频）：
+      || line.indexOf("move_joints") >= 0 || line.indexOf("teleop_joints") >= 0) {
+    // 心跳/保活 + car_drive（20Hz 持续速度）+ move_joints/teleop_joints（遥操作 20Hz 高频）：
     // 只喂狗执行，不回包。高频响应会堆积在 TCP/USB 上淹没其它响应（如 ping pong），
     // 导致客户端误判断连或看门狗饿死。
     motion.feedWatchdog();

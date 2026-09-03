@@ -3,7 +3,7 @@
 
 // 指令表（与 protocol.py KNOWN_COMMANDS 对齐；固件实现子集）
 static const char* kCommands[] = {
-    "ping", "status", "move_joints", "move_to_pose", "home",
+    "ping", "status", "move_joints", "teleop_joints", "move_to_pose", "home",
     "open_gripper", "close_gripper", "estop", "resume", "telemetry",
     "bus_diag", "bus_scan", "bus_raw", "bus_pos", "bus_goto", "car_scan", "car_status", "car_move",
     "car_home", "car_torque", "car_stop", "car_resume", "car_drive",
@@ -291,6 +291,40 @@ bool handleCommand(FeetechBus& bus, FeetechBus& bus2, MotionController& motion,
         }
       }
     }
+  } else if (strcmp(cmd, "teleop_joints") == 0) {
+    // 直写遥操作（遥操作桥专用）：接收全 6 关节归一化目标，直接写 Goal_Position。
+    // 无插值状态机（舵机内部速度控制自行平滑），无 readAllPositions，不回包（见 .ino 抑制）。
+    // 帧即喂狗；断连 500ms 由主循环 watchdog（teleopActive 覆盖）急停。
+    JsonObject targets = params["targets"].as<JsonObject>();
+    if (targets.isNull() || targets.size() == 0) {
+      out["error"] = "missing targets";
+    } else {
+      float norm[NUM_JOINTS];
+      // 未指定关节保持当前 lastRaw_ 位形（避免只发部分关节时其余被归零）
+      for (int i = 0; i < NUM_JOINTS; i++) {
+        norm[i] = MotionController::rawToNorm(JOINTS[i], motion.lastRaw(i));
+      }
+      bool any = false;
+      for (JsonPair kv : targets) {
+        int idx;
+        if (!findJointIdx(kv.key().c_str(), idx)) {
+          out["error"] = "unknown joint";
+          out["result"] = (const char*)nullptr;
+          serializeJson(out, resp);
+          return true;
+        }
+        norm[idx] = kv.value().as<float>();
+        any = true;
+      }
+      if (!any) {
+        out["error"] = "missing targets";
+      } else if (motion.writeTeleopTargets(norm)) {
+        out["ok"] = true;   // 响应会被 .ino 抑制（teleop_joints 高频不回包）
+      } else {
+        out["error"] = motion.estopActive() ? "estop active" : "write failed";
+      }
+    }
+    keepalive = true;
   } else if (strcmp(cmd, "home") == 0 || strcmp(cmd, "move_to_pose") == 0) {
     const char* pose = params["pose"] | "home";
     if (strcmp(pose, "home") == 0) {

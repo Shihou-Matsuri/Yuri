@@ -64,6 +64,7 @@ class LeaderBridge:
         move_duration_s: float = 0.3,
         estop_tolerance_s: float = 1.0,
         apply_speed_limit: bool = True,
+        cmd_name: str = "move_joints",
     ):
         """
         joint_limits: 各关节允许范围 (min,max)，归一化单位。
@@ -84,6 +85,7 @@ class LeaderBridge:
             raise ValueError(f"joint_limits 缺少关节: {sorted(missing)}")
         self._apply_speed_limit = apply_speed_limit
         self._move_duration_s = move_duration_s
+        self._cmd_name = cmd_name
         self._joint_limits = joint_limits
         self._max_velocity = max_velocity
         self._deadband = deadband
@@ -214,14 +216,15 @@ class LeaderBridge:
 
     # ------------------------------------------------------------------ 发送
     def _send_move_joints(self, transport: TransportLike, targets: dict[str, float]) -> None:
-        cmd = {
-            "cmd": "move_joints",
-            "params": {"targets": targets, "duration": self._move_duration_s},
-        }
+        # teleop_joints（直写）不需要 duration；move_joints（插值）需要。
+        params: dict[str, Any] = {"targets": targets}
+        if self._cmd_name == "move_joints":
+            params["duration"] = self._move_duration_s
+        cmd = {"cmd": self._cmd_name, "params": params}
         try:
             transport.send(cmd)
         except Exception as exc:  # noqa: BLE001
-            logger.error("发送 move_joints 失败: %s -> 急停", exc)
+            logger.error("发送 %s 失败: %s -> 急停", self._cmd_name, exc)
             self._estop = True
 
     def _send_heartbeat(self, transport: TransportLike) -> None:

@@ -104,8 +104,24 @@ bool MotionController::writeGoalRaw(const int16_t raw[NUM_JOINTS]) {
   return all;
 }
 
+bool MotionController::writeTeleopTargets(const float targets[NUM_JOINTS]) {
+  // 直写遥操作：不走插值状态机，直接把 6 关节归一化目标转 raw 写 Goal_Position。
+  // 舵机内部自带速度控制，会自行平滑到达；每帧覆盖为最新目标，无积压/无"卡在插值中途"。
+  if (estop_) return false;
+  interp_ = false;  // 取消任何进行中的插值（防止 tick 继续写旧目标）
+  int16_t raw[NUM_JOINTS];
+  for (int i = 0; i < NUM_JOINTS; i++) {
+    raw[i] = normToRaw(JOINTS[i], targets[i]);
+  }
+  bool ok = writeGoalRaw(raw);  // 内部 memcpy 更新 lastRaw_
+  feedWatchdog();
+  teleopActive_ = true;
+  return ok;
+}
+
 bool MotionController::moveToNorm(const float targets[NUM_JOINTS], uint32_t durationMs) {
   if (estop_) return false;
+  teleopActive_ = false;  // 插值接管运动，退出直写遥操作状态
 
   if (interp_) {
     // 插值中收到新目标（遥操作高频跟随）：从"实际最后写入的位置"续到新目标。

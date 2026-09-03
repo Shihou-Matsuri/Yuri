@@ -30,6 +30,14 @@ class MotionController {
   void feedWatchdog() { lastCmdMs_ = millis(); }
   bool watchdogExpired() const { return (uint32_t)(millis() - lastCmdMs_) > WATCHDOG_MS; }
 
+  // ---- 直写遥操作（teleop_joints）----
+  // 遥操作帧直接写 Goal_Position，不走插值状态机；置活动标志让看门狗在
+  // 断连（500ms 无帧）时也能触发急停（原 watchdog 只在 interpActive 时触发）。
+  void setTeleopActive(bool on) { teleopActive_ = on; if (!on) interp_ = false; }
+  bool teleopActive() const { return teleopActive_; }
+  bool writeTeleopTargets(const float targets[NUM_JOINTS]);  // 直写 6 关节
+  int16_t lastRaw(int idx) const { return (idx >= 0 && idx < NUM_JOINTS) ? lastRaw_[idx] : 0; }
+
   // ---- 急停 ----
   void estop() { estop_ = true; }
   void resume() { estop_ = false; }
@@ -49,4 +57,5 @@ class MotionController {
   uint32_t stepsTotal_ = 0;
   uint32_t stepsDone_ = 0;
   bool interp_ = false;
+  bool teleopActive_ = false;   // 直写遥操作进行中（看门狗需覆盖此状态）
 };
