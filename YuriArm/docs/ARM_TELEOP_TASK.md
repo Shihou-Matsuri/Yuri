@@ -7,7 +7,16 @@
 > `yuriarm/leader_bridge.py`、`yuriarm/esp32_transport.py`、`configs/leader.json`、
 > `tools/leader_remote.py`、`tests/test_leader_bridge.py`（7 测试通过，无硬件可跑）。
 > 用法见 §3 与 §5；`--mock` 可离线验证，真机用 `tools/leader_remote.py --link serial --serial COMx`。
-> 已通过真机链路 ping（主动臂 COM7 + ESP32），实际运动联调待从动臂供电后完成。
+>
+> **真机联调（2026-09-03，leader COM7 → ESP32 COM8 → follower）**：
+> - 链路已打通：主动臂读数、ESP32→从动臂驱动、torque 均正常。
+> - 主动臂 6 关节读数平滑（幅度 99~197），从动臂单关节大幅动作能到位。
+> - **固件改动**：`config.h` 从动臂 JOINTS 的 `estop_load` 1500→1800 并已烧录——
+>   1500 时大幅运动负载 1600 触发误急停导致从动臂中途失力。
+> - 小幅/中速跟随正常；**大幅快动有滞后**（固件插值 MOVE_STEPS_HZ=20 + 发送策略，
+>   已知限制，用户接受）。
+> - 控制节奏：10Hz 发送 + duration 0.3s + 每帧无条件发（不靠 deadband 抑制，
+>   否则大幅后 leader 停住从动臂停在半路）+ heartbeat 喂狗。
 
 ## 1. 结论先行
 
