@@ -68,6 +68,14 @@ python camera_car_drive.py --port COM21
 Windows 单文件发布包位于 `YuriChassis/release/CameraCarController.exe`，
 旁边提供对应的 `.sha256` 校验文件。
 
+ESP32 无线版另有打包好的单文件 exe（PyInstaller，配置已内置）：
+
+- `release/CarRemote.exe`（~7MB）— 纯轮子 WiFi 键盘遥控
+- `release/DualRemote.exe`（~195MB，内置 lerobot/torch）— 机械臂 + 轮子同时控制，需主动臂 COM7
+
+均带 `.sha256` 校验；命令行参数与对应 `.py` 一致（如 `--serial COM8`、`--leader-port`）。
+注意：exe 是单文件自解压，首次启动稍慢；键盘控制须在 cmd 命令行跑。
+
 ## 无线键盘遥控
 
 WiFi 和 BLE 都复用 `kiwi_drive.py` 的运动学与键位映射，目标是 ESP32-S3 无线执行端。

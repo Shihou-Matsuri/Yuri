@@ -18,3 +18,4 @@ YuriEye/ml/weights/
 *.pt
 *.cache
 *.npy
+*.spec

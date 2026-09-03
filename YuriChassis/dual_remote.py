@@ -56,7 +56,7 @@ from car_remote import (  # noqa: E402
     send_car_stop,
 )
 
-from yuriarm.config import DEFAULT_CONFIG_PATH, JOINT_NAMES, load_config  # noqa: E402
+from yuriarm.config import JOINT_NAMES, load_config  # noqa: E402
 from yuriarm.leader_bridge import LeaderBridge  # noqa: E402
 from tools.leader_remote import _make_leader  # noqa: E402
 
@@ -64,11 +64,22 @@ TICK_HZ = 20.0
 SEND_PERIOD = 1.0 / TICK_HZ
 
 
+def _config_dir() -> Path:
+    """配置文件目录：源码跑 = YuriArm/configs；PyInstaller 打包 = 内置 _MEIPASS/configs。
+
+    源码时 __file__ 指向仓库，_YURIARM/configs 正确；打包后 __file__ 在解压临时目录，
+    改用 _MEIPASS（--add-data 内置的 configs 落在这里）。
+    """
+    if getattr(sys, "frozen", False):
+        return Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)) / "configs"
+    return _YURIARM / "configs"
+
+
 def _load_bridge() -> LeaderBridge:
     """按 leader.json/arm.json 构建直写遥操作桥（teleop_joints）。"""
-    conf = json.loads((_YURIARM / "configs" / "leader.json").read_text(encoding="utf-8"))
+    conf = json.loads((_config_dir() / "leader.json").read_text(encoding="utf-8"))
     leader_cfg = conf["leader"]
-    arm_cfg = load_config(DEFAULT_CONFIG_PATH)
+    arm_cfg = load_config(_config_dir() / "arm.json")
     safety = arm_cfg.safety
     limits = {
         m: (float(safety["joint_limits"][m][0]), float(safety["joint_limits"][m][1]))
@@ -135,7 +146,7 @@ def main() -> int:
     link_name = f"串口 {args.serial}" if args.serial else f"TCP {args.host}:{args.port}"
 
     # ---- 主动臂 + 桥 ----
-    leader_cfg = json.loads((_YURIARM / "configs" / "leader.json").read_text(encoding="utf-8"))
+    leader_cfg = json.loads((_config_dir() / "leader.json").read_text(encoding="utf-8"))
     leader_port = args.leader_port or leader_cfg["leader"].get("port", "COM7")
     print(f"[dual_remote] 连接主动臂 {leader_port} ...")
     leader = _make_leader(leader_port, mock=False)

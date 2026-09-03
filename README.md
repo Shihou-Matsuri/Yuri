@@ -70,6 +70,7 @@ C:\Users\21209\lerobot_venv312\Scripts\python.exe dual_remote.py
 - 前置：主动臂 COM7 + ESP32（默认 WiFi TCP，或 `--serial COM8`）；从动臂 + 小车供电；车体抬空首测。
 - 操作：手握主动臂 → 从动臂跟随；W/S/A/D/Z/X 轮子 · 空格停 · E 轮子急停（不动臂）· Q 退出（刹停+estop）。
 - 键盘程序必须命令行跑（PyCharm 抓不到键）。
+- 或直接运行打包 exe：`YuriChassis/release/DualRemote.exe`（内置配置；纯轮子用 `CarRemote.exe`）。
 
 ### 烧录固件
 

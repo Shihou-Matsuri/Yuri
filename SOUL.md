@@ -74,8 +74,10 @@ Yuri = 笔记本（感知/规划/遥操作）→ ESP32-S3（无线执行端）�
 
 ## 环境事实（本机 2026-09）
 
-- 本机 venv：`C:\Users\21209\lerobot_venv312`（python.exe 曾损坏为 0 字节，
-  用 venvlauncher 修复——**venv 的 python.exe 是 launcher，不是完整 exe**）。
+- 本机 venv：`C:\Users\21209\lerobot_venv312`（python.exe 已两次损坏为 0 字节
+  [2026-09-02、2026-09-04]，用 venvlauncher 修复——**venv 的 python.exe 是
+  launcher，不是完整 exe**；修复源 = uv python `cpython-3.13.3-...\Lib\venv\scripts\nt\venvlauncher.exe`，
+  可引导 3.12 venv，勿换完整 python.exe）。
 - 主动臂 COM7（CH343）/ ESP32 COM8（115200 指令口）。
 - 烧录：`arduino-cli upload -p COM8 --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc`，
   需用户 BOOT+RESET。
