@@ -49,8 +49,10 @@
 | estop / resume | 急停 / 恢复 | {} |
 | telemetry | 遥测（位置/负载/电压/温度） | {} |
 | bus_diag | 诊断 UART1/UART2：回显 + 逐 ID ping | {} |
+| bus_scan | 全 ID 扫描 UART1，查找从动臂实际舵机 | {} |
+| car_scan | 全 ID 扫描 UART2 当前/交换方向，查找小车实际舵机 | {} |
 | car_status | 小车遥测（id/position/load/电压/温度） | {} |
-| car_move | 小车按原始位置移动（伺服模式） | targets={"1":...,"2":...,"3":...}, duration |
+| car_move | 小车按原始位置移动（伺服模式） | targets={"7":...,"8":...,"9":...}, duration |
 | car_home | 小车回到中点 2048 | duration |
 | car_torque | 小车力矩开关 | on=true/false |
 | car_stop / car_resume | 小车急停/恢复 | {} |
@@ -92,5 +94,3 @@
  "loads":      {"gripper": 12.0, "...": 0.0},
  "voltage": 7.4, "temperature": 35.0, "torque_on": true}
 ```
-
-

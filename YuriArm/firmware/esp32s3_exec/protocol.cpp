@@ -5,7 +5,7 @@
 static const char* kCommands[] = {
     "ping", "status", "move_joints", "move_to_pose", "home",
     "open_gripper", "close_gripper", "estop", "resume", "telemetry",
-    "bus_diag", "bus_scan", "bus_raw", "car_status", "car_move",
+    "bus_diag", "bus_scan", "bus_raw", "car_scan", "car_status", "car_move",
     "car_home", "car_torque", "car_stop", "car_resume", "car_drive",
 };
 static const int kNumCommands = (int)(sizeof(kCommands) / sizeof(kCommands[0]));
@@ -109,8 +109,8 @@ static void diagBus(JsonDocument& resp, const char* key, FeetechBus& b, bool car
 }
 
 // 全 ID 扫描：找总线上所有真实存在的舵机，并读第一个的电压/温度
-static void scanBus(JsonDocument& resp, FeetechBus& b) {
-  JsonArray found = resp["result"]["found"].to<JsonArray>();
+static void scanBus(JsonObject& result, FeetechBus& b, const char* key) {
+  JsonArray found = result["found"].to<JsonArray>();
   int count = 0;
   uint16_t firstVolt = 0;
   uint8_t firstTemp = 0;
@@ -131,10 +131,10 @@ static void scanBus(JsonDocument& resp, FeetechBus& b) {
       }
     }
   }
-  resp["result"]["count"] = count;
-  resp["result"]["voltage_first"] = firstVolt;
-  resp["result"]["temperature_first"] = firstTemp;
-  resp["result"]["uart"] = "uart1";
+  result["count"] = count;
+  result["voltage_first"] = firstVolt;
+  result["temperature_first"] = firstTemp;
+  result["uart"] = key;
 }
 
 // 对 ID 1~6 各发一个 PING，把 RX 收到的原始字节原样打印成 HEX（不解析）
@@ -364,12 +364,24 @@ bool handleCommand(FeetechBus& bus, FeetechBus& bus2, MotionController& motion,
   } else if (strcmp(cmd, "bus_scan") == 0) {
     // 全 ID 扫描 UART1，找总线上真实舵机（不会受 ID 不是 1~6 影响）
     out["ok"] = true;
-    scanBus(out, bus);
+    JsonObject r = out["result"].to<JsonObject>();
+    scanBus(r, bus, "uart1");
     keepalive = true;
   } else if (strcmp(cmd, "bus_raw") == 0) {
     // 发 PING 并显示 RX 原始字节，排查波特率/供电/方向
     out["ok"] = true;
     scanRaw(out, bus);
+    keepalive = true;
+  } else if (strcmp(cmd, "car_scan") == 0) {
+    // 全 ID 扫描 UART2（当前方向和交换方向）：找出小车上实际存在的舵机 ID，
+    // 不依赖 CAR_SERVO_IDS，也能区分 TX/RX 接反。
+    out["ok"] = true;
+    JsonObject u2 = out["result"]["uart2"].to<JsonObject>();
+    scanBus(u2, bus2, "uart2");
+    JsonObject u2Swap = out["result"]["uart2_swap"].to<JsonObject>();
+    bus2.swapPins();
+    scanBus(u2Swap, bus2, "uart2_swap");
+    bus2.swapPins();
     keepalive = true;
   } else if (strcmp(cmd, "car_status") == 0) {
     out["ok"] = true;
@@ -521,7 +533,4 @@ bool handleCommand(FeetechBus& bus, FeetechBus& bus2, MotionController& motion,
   serializeJson(out, resp);
   return true;
 }
-
-
-
 

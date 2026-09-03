@@ -72,11 +72,13 @@ GPIO13 不接（Waveshare UART 模式无需方向脚）
 {"id":4,"cmd":"telemetry","params":{}}
 {"id":5,"cmd":"estop","params":{}}
 {"id":6,"cmd":"car_status","params":{}}
-{"id":7,"cmd":"car_move","params":{"targets":{"1":2048,"2":2048,"3":2048},"duration":1.0}}
+{"id":7,"cmd":"car_scan","params":{}}
+{"id":8,"cmd":"car_drive","params":{"speeds":{"7":300,"8":-150,"9":0}}}
 ```
 
-`car_*` 是小车总线（UART2，id 1/2/3，原始 0~4095）的轻量控制，便于在接好适配器后
-先单独验证移动。`car_torque`、`car_stop`/`car_resume` 可单独开关/急停小车。
+`car_*` 是 LeKiwi 小车总线（UART2，ID 7/8/9）的控制：`car_scan` 先确认实际电机 ID，
+`car_drive` 写连续速度（原始范围 ±1800），`car_move/car_home` 走位置插值。
+`car_torque`、`car_stop`/`car_resume` 可单独开关/急停小车。
 
 ## 安全行为
 

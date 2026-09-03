@@ -108,6 +108,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--duration", type=float, default=2.0)
     ap.add_argument("--diag", action="store_true", help="发送 bus_diag 并退出")
     ap.add_argument("--scan", action="store_true", help="发送 bus_scan 全 ID 扫描并退出")
+    ap.add_argument("--car-scan", action="store_true", help="发送 car_scan 全 ID 扫描 UART2 并退出")
     ap.add_argument("--raw", action="store_true", help="发送 bus_raw 原始字节诊断并退出")
     ap.add_argument("--no-estop", action="store_true")
     ap.add_argument("--ping-only", action="store_true")
@@ -156,6 +157,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.scan:
             r = send(t, "bus_scan")
             print("[bus_scan]", json.dumps(r, ensure_ascii=False))
+            return 0 if r.get("ok") else 1
+
+        if args.car_scan:
+            r = send(t, "car_scan")
+            print("[car_scan]", json.dumps(r, ensure_ascii=False))
             return 0 if r.get("ok") else 1
 
         if args.raw:
