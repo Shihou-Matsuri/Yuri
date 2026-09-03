@@ -120,6 +120,19 @@ def _make_transport(link: str, args) -> "object":
     raise ValueError(f"不支持的 link '{link}'")
 
 
+def _pid_alive(pid: int) -> bool:
+    """跨平台检查进程是否存活（Windows 用 tasklist / 进程枚举）。"""
+    import subprocess  # noqa: PLC0415
+    try:
+        out = subprocess.run(
+            ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+            capture_output=True, text=True, timeout=5,
+        )
+        return f'"{pid}"' in out.stdout or str(pid) in out.stdout
+    except Exception:  # noqa: BLE001
+        return True  # 无法确认则视为存活（保守）
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="主动臂遥控从动臂（经 ESP32 无线执行端）")
     ap.add_argument("--config", default=str(DEFAULT_LEADER_CONFIG), help="leader.json 路径")
@@ -170,6 +183,35 @@ def main() -> int:
     if connect is not None:
         print(f"[leader_remote] 连接主动臂 {leader_port} ...")
         connect(calibrate=False)  # 用已有标定，不触发交互校准
+
+    # 单实例锁：同一串口只允许一个桥进程，防多进程抢串口造成指令淹没/巨延迟/全卡。
+    if link == "serial" and not args.mock:
+        _lock_path = Path(__file__).with_name(f".leader_remote_{args.serial}.pid")
+        try:
+            if _lock_path.exists():
+                _old_pid = int(_lock_path.read_text().strip())
+                _alive = _pid_alive(_old_pid)
+                if _alive:
+                    print(
+                        f"[leader_remote] 已有桥进程(PID {_old_pid})占用串口 {args.serial}，"
+                        "请先关闭它再启动（多进程抢串口会导致从动臂延迟/卡住）。"
+                    )
+                    return 2
+                # 旧进程已死，接管
+                _lock_path.unlink(missing_ok=True)
+        except Exception:  # noqa: BLE001
+            pass
+        _lock_path.write_text(str(__import__("os").getpid()))
+        import atexit as _atexit
+
+        def _release_lock() -> None:
+            try:
+                if _lock_path.exists() and _lock_path.read_text().strip() == str(__import__("os").getpid()):
+                    _lock_path.unlink(missing_ok=True)
+            except Exception:  # noqa: BLE001
+                pass
+
+        _atexit.register(_release_lock)
 
     # 预检串口占用：避免多进程抢同一串口导致看门狗误触发/连接断。
     if link == "serial" and not args.mock:
