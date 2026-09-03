@@ -71,6 +71,7 @@ cd YuriEye
 ## 相关文档
 
 - `YuriArm/docs/方案设计.md`：YuriArm 设计
+- `YuriArm/docs/ARM_TELEOP_TASK.md`：主动臂遥控从动臂交接任务
 - `YuriArm/firmware/protocol.md`：ESP32 JSON 协议
 - `YuriEye/docs/方案设计.md`：YuriEye 设计
 - `docs/ROADMAP.md`：总体路线
