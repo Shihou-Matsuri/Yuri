@@ -208,8 +208,8 @@ void bleInit() {
 }
 
 void setup() {
-  Serial.begin(115200);
-  Serial0.begin(115200);   // UART0：CH343 USB 转串口 / 调试口（GPIO43/44）
+  Serial.begin(460800);
+  Serial0.begin(460800);   // UART0：CH343 USB 转串口 / 调试口（GPIO43/44）
   delay(300);
   Serial.println();
   Serial.println("[YuriArm ESP32-S3 exec] boot");

@@ -126,7 +126,7 @@ def _pid_alive(pid: int) -> bool:
     try:
         out = subprocess.run(
             ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True, text=True, timeout=5, errors="ignore",
         )
         return f'"{pid}"' in out.stdout or str(pid) in out.stdout
     except Exception:  # noqa: BLE001
@@ -217,7 +217,7 @@ def main() -> int:
     if link == "serial" and not args.mock:
         try:
             import serial as _ser
-            _probe = _ser.Serial(args.serial, 115200, timeout=0.2)
+            _probe = _ser.Serial(args.serial, 460800, timeout=0.2)
             _probe.close()
             print(f"[leader_remote] 串口 {args.serial} 可访问")
         except Exception as _pe:  # noqa: BLE001
