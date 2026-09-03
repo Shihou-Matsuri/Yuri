@@ -12,7 +12,7 @@ echo       握着主动臂动, 从动臂会跟着动
 echo       按 Ctrl+C 停止
 echo.
 
-C:\Users\21209\lerobot_venv312\Scripts\lerobot-teleoperate.exe ^
+C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\lerobot-teleoperate.exe ^
   --robot.type=so101_follower ^
   --robot.port=COM4 ^
   --teleop.type=so101_leader ^

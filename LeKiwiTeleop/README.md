@@ -17,7 +17,7 @@
 ## 环境
 
 ```text
-Python 3.12 venv + lerobot 0.6.1（本机示例：C:\Users\21209\lerobot_venv312）
+Python 3.12 venv + lerobot 0.6.1（本机示例：C:\Users\21209\Desktop\Yuri\lerobot_venv312）
 源码：github.com/huggingface/lerobot (tag v0.6.1)
 端口示例：主动臂 COM7 | 从动臂 COM4（以实际为准）
 ```
@@ -38,19 +38,19 @@ Python 3.12 venv + lerobot 0.6.1（本机示例：C:\Users\21209\lerobot_venv312
 先确认端口在线：
 
 ```bash
-C:\Users\21209\lerobot_venv312\Scripts\python.exe -c "import serial.tools.list_ports as lp; [print(p.device,p.description) for p in lp.comports()]"
+C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe -c "import serial.tools.list_ports as lp; [print(p.device,p.description) for p in lp.comports()]"
 ```
 
 ## 校准（每台臂首次 / 跟动异常时重做）
 
 从动臂（so101_follower）：
 ```bat
-C:\Users\21209\lerobot_venv312\Scripts\lerobot-calibrate.exe --robot.type=so101_follower --robot.port=COM4
+C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\lerobot-calibrate.exe --robot.type=so101_follower --robot.port=COM4
 ```
 
 主动臂（so101_leader，注意是 --teleop 不是 --robot）：
 ```bat
-C:\Users\21209\lerobot_venv312\Scripts\lerobot-calibrate.exe --teleop.type=so101_leader --teleop.port=COM7
+C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\lerobot-calibrate.exe --teleop.type=so101_leader --teleop.port=COM7
 ```
 
 > 校准交互步骤（需人在场）：
@@ -69,11 +69,11 @@ C:\Users\21209\lerobot_venv312\Scripts\lerobot-calibrate.exe --teleop.type=so101
 方式A：双击 `teleop_so101_start.bat`
 方式B：命令行
 ```bat
-C:\Users\21209\lerobot_venv312\Scripts\lerobot-teleoperate.exe --robot.type=so101_follower --robot.port=COM4 --teleop.type=so101_leader --teleop.port=COM7
+C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\lerobot-teleoperate.exe --robot.type=so101_follower --robot.port=COM4 --teleop.type=so101_leader --teleop.port=COM7
 ```
 方式C：直接跑本项目源码（封装了官方 API，不再经 CLI）
 ```bat
-C:\Users\21209\lerobot_venv312\Scripts\python.exe teleop_so101.py
+C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe teleop_so101.py
 ```
 > 源码里改 `LEADER_PORT` / `FOLLOWER_PORT` / `FPS` 三个常量即可。
 

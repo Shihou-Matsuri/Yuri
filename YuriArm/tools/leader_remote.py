@@ -106,7 +106,7 @@ def _make_leader(port: str, *, mock: bool):
             continue
     raise RuntimeError(
         f"无法导入 lerobot leader（试过 so101_leader/so_leader）: {last_err}\n"
-        "请使用装有 lerobot 的 venv（本机: C:\\Users\\21209\\lerobot_venv312）"
+        "请使用装有 lerobot 的 venv（本机: C:\\Users\\21209\\Desktop\\Yuri\\lerobot_venv312）"
     )
 
 

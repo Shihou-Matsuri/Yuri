@@ -74,7 +74,7 @@ Yuri = 笔记本（感知/规划/遥操作）→ ESP32-S3（无线执行端）�
 
 ## 环境事实（本机 2026-09）
 
-- 本机 venv：`C:\Users\21209\lerobot_venv312`（python.exe 已两次损坏为 0 字节
+- 本机 venv：`C:\Users\21209\Desktop\Yuri\lerobot_venv312`（python.exe 已两次损坏为 0 字节
   [2026-09-02、2026-09-04]，用 venvlauncher 修复——**venv 的 python.exe 是
   launcher，不是完整 exe**；修复源 = uv python `cpython-3.13.3-...\Lib\venv\scripts\nt\venvlauncher.exe`，
   可引导 3.12 venv，勿换完整 python.exe）。

@@ -42,7 +42,7 @@ Q 退出车不停（收尾未等 ESP32 处理就 close）、E 使臂失效（全
 实测命令（用户自己 cmd 终端跑，键盘程序必须命令行跑，PyCharm 抓不到键）：
 ```bat
 cd C:\Users\21209\Desktop\Yuri\YuriChassis
-C:\Users\21209\lerobot_venv312\Scripts\python.exe dual_remote.py   :: 默认 WiFi TCP
+C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe dual_remote.py   :: 默认 WiFi TCP
 :: 或 --serial COM8 走 USB
 ```
 前置：电脑 WiFi 连 `YuriArm-AP`（密码 yuriarm123，会断外网）；车体抬空；
@@ -51,7 +51,7 @@ C:\Users\21209\lerobot_venv312\Scripts\python.exe dual_remote.py   :: 默认 WiF
 
 ## 4. 环境事实（本机）
 
-- Python：`C:\Users\21209\lerobot_venv312\Scripts\python.exe`（py3.12 + lerobot 0.6.1 +
+- Python：`C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe`（py3.12 + lerobot 0.6.1 +
   pyserial）。**venv 的 python.exe 是 venvlauncher**——曾 0 字节损坏报"此应用不可运行"，
   修复 = 从 uv python 目录复制 venvlauncher.exe 改名（不是完整 python.exe）。
 - 串口：主动臂 COM7（CH343）；ESP32 COM8（指令口 115200）。从动臂由 ESP32 UART1 驱动。

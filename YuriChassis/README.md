@@ -25,7 +25,7 @@
 ```bash
 # 直接跑，键盘控制：w前 s后 a左移 d右移 z自旋 空格停 q退
 # 需：ID7/8/9 舵机已设好、12V 供电、COM5 未被占用
-C:\Users\21209\lerobot_venv312\Scripts\python.exe kiwi_drive.py
+C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe kiwi_drive.py
 ```
 
 > 端口/舵机 ID 在 `kiwi_drive.py` 顶部常量（PORT/BAUD/ID_LEFT 等）改。
@@ -95,7 +95,7 @@ python car_remote_ble.py --address AA:BB:CC:DD:EE:FF
 ## 跑测试（无需硬件）
 
 ```bash
-C:\Users\21209\lerobot_venv312\Scripts\python.exe -m unittest discover -s tests -v
+C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
 ## 关键坑（已修复，勿回退）
