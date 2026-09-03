@@ -1,5 +1,10 @@
 <template>
-  <span :class="['st-dot', cls]" :title="label" />
+  <n-tooltip>
+    <template #trigger>
+      <span :class="['st-dot', cls]" />
+    </template>
+    {{ label }}
+  </n-tooltip>
 </template>
 <script setup>
 import { computed } from 'vue'

@@ -1,43 +1,57 @@
-:root { color-scheme: light; }
-[data-theme='dark'] { color-scheme: dark; }
-* { box-sizing: border-box; }
+/* 移植 docs/gui-reference/base.reference.css + 遥控台业务样式（统一 --mv-* 变量） */
 html, body, #app { height: 100%; margin: 0; }
+* { box-sizing: border-box; }
 body {
-  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  background: var(--bg); color: var(--text);
-  transition: background .2s ease, color .2s ease;
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--mv-bg, #f5f6f8);
+  color: var(--mv-text, #2a2a38);
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
-.shell { min-height: 100%; display: flex; flex-direction: column; }
-.topbar {
-  height: 56px; display: flex; align-items: center; justify-content: space-between;
-  padding: 0 18px; background: var(--card); border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 10;
-}
-.brand { display: flex; align-items: center; gap: 10px; }
-.logo-dot { width: 12px; height: 12px; border-radius: 4px; background: var(--primary); }
-.title { font-size: 18px; font-weight: 700; }
-.top-actions { display: flex; align-items: center; gap: 10px; }
-.zones { padding: 14px 18px; flex: 1; }
-/* 语义色（规范 4.3） */
-.st-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-.st-ok { background: var(--ok); } .st-warn { background: var(--warn); }
-.st-danger { background: var(--danger); } .st-off { background: var(--off); } .st-info { background: var(--info); }
+#app { background: var(--mv-bg, #f5f6f8); transition: background-color 0.25s ease; }
+::selection { background: var(--mv-primary-soft, rgba(124,111,232,0.2)); }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--mv-border, #e8e8f0); border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.18s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* 卡片 hover 微交互（参考 mv-card-hover） */
+.mv-card-hover { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+.mv-card-hover:hover { transform: translateY(-2px); box-shadow: var(--mv-shadow); }
+
+/* 通用小字提示 */
+.hint { font-size: 12px; color: var(--mv-text-2); }
+
+/* 遥控台骨架 */
+.shell { min-height: 100vh; display: flex; flex-direction: column; }
+.zones { padding: 18px 20px; flex: 1; max-width: 1180px; margin: 0 auto; width: 100%; }
+
+/* 状态点：10px + 同色辉光（参考 ServiceDots） */
+.st-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.st-ok { background: var(--mv-ok); box-shadow: 0 0 6px var(--mv-ok); }
+.st-warn { background: var(--mv-warn); box-shadow: 0 0 6px var(--mv-warn); }
+.st-danger { background: var(--mv-danger); box-shadow: 0 0 6px var(--mv-danger); }
+.st-off { background: var(--mv-off); box-shadow: 0 0 6px var(--mv-off); }
+.st-info { background: var(--mv-info); box-shadow: 0 0 6px var(--mv-info); }
+
 /* 小车方向盘 */
 .pad { display: grid; grid-template-columns: repeat(3, 96px); gap: 8px; justify-content: center; padding: 8px 0; }
 .pad button {
-  height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--card);
-  color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer;
+  height: 44px; border-radius: 10px; border: 1px solid var(--mv-border); background: var(--mv-card);
+  color: var(--mv-text); font-size: 14px; font-weight: 600; cursor: pointer;
   box-shadow: 0 2px 6px rgba(42,42,56,.05); transition: transform .08s ease, background .15s ease;
+  font-family: inherit;
 }
-.pad button:active { transform: translateY(1px); background: var(--primary-soft); }
-.pad .estop-btn { background: var(--danger); border-color: var(--danger); color: #fff; }
-.pad .stop-btn { background: var(--warm-soft, var(--primary-soft)); }
-/* 读数表 */
+.pad button:active { transform: translateY(1px); background: var(--mv-primary-soft); }
+.pad .estop-btn { background: var(--mv-danger); border-color: var(--mv-danger); color: #fff; }
+.pad .stop-btn { background: var(--mv-primary-soft); }
+
+/* 读数 / 日志 */
 .readouts { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 6px 0; }
-.readouts .ro { font-size: 13px; color: var(--text-2); }
-.readouts .ro b { color: var(--text); font-variant-numeric: tabular-nums; }
-/* 日志 */
+.readouts .ro { font-size: 13px; color: var(--mv-text-2); }
+.readouts .ro b { color: var(--mv-text); font-variant-numeric: tabular-nums; }
 .loglist { max-height: 220px; overflow: auto; font-size: 12px; font-family: Consolas, monospace; }
 .logline { padding: 2px 4px; border-radius: 4px; white-space: nowrap; }
-.lv-error { color: var(--danger); } .lv-warn { color: var(--warn); }
-.lv-info { color: var(--text-2); }
+.lv-error { color: var(--mv-danger); } .lv-warn { color: var(--mv-warn); }
+.lv-info { color: var(--mv-text-2); }
