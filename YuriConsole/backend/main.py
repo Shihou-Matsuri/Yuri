@@ -116,6 +116,30 @@ def arm_enabled(req: EnabledReq) -> JSONResponse:
     return JSONResponse({"ok": True})
 
 
+class ArmPadReq(BaseModel):
+    enabled: bool = False
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+
+
+@app.post("/api/arm/pad")
+def arm_pad(req: ArmPadReq) -> JSONResponse:
+    """手柄控机械臂（速率）；x=pan、y=lift、z=elbow。"""
+    core.arm_pad_set(req.enabled, req.x, req.y, req.z)
+    return JSONResponse({"ok": True})
+
+
+class GripperReq(BaseModel):
+    action: str = "open"   # open | close
+
+
+@app.post("/api/gripper")
+def gripper(req: GripperReq) -> JSONResponse:
+    core.gripper_cmd(req.action)
+    return JSONResponse({"ok": True})
+
+
 @app.get("/api/logs")
 def logs(level: str | None = None) -> list[dict]:
     return core.get_logs(level)

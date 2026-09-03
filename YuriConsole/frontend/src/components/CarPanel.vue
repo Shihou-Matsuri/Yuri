@@ -12,9 +12,16 @@
         <n-radio-button value="hold">按住移动</n-radio-button>
       </n-radio-group>
       <template v-if="inputMode === 'gamepad'">
-        <StatusDot :level="padLevel" />
-        <span class="hint">{{ padText }}</span>
+        <span class="hint">右摇杆</span>
+        <n-radio-group v-model:value="rsRole" size="small">
+          <n-radio-button value="turn">小车转向</n-radio-button>
+          <n-radio-button value="arm">控制机械臂</n-radio-button>
+        </n-radio-group>
       </template>
+    </n-space>
+    <n-space v-if="inputMode === 'gamepad'" align="center" size="small">
+      <StatusDot :level="padLevel" />
+      <span class="hint">{{ padText }}</span>
     </n-space>
 
     <div class="pad" :style="{ opacity: inputMode === 'keys' ? 1 : 0.45 }">
@@ -46,15 +53,18 @@ import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useConsole } from '../stores/console'
 import StatusDot from './StatusDot.vue'
 
-// 手柄摇杆上限，同步 YuriChassis/kiwi_drive.py 的 LINEAR_SPEED_MPS / ANGULAR_SPEED_RAD_S
+// 手柄摇杆上限，同步 YuriChassis/kiwi_drive.py
 const CAR_LIMITS = { linear: 0.10, angular: 0.60 }
 const DEADZONE = 0.15
-const BTN = { A: 0, B: 1, Y: 3 }
+const AX = { LX: 0, LY: 1, RX: 2, RY: 3 }
+const BTN = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, DPAD_UP: 12, DPAD_DOWN: 13 }
 
 const store = useConsole()
 const inputMode = ref('keys')
+const rsRole = ref('turn')
+try { if (localStorage.getItem('mv-rs-role') === 'arm') rsRole.value = 'arm' } catch { /* in-memory */ }
 const padConnected = ref(false)
-const prevBtns = { A: false, B: false, Y: false }
+const prevBtn = { A: false, B: false, X: false, Y: false, LB: false, RB: false }
 let padWasConnected = false
 let padTimer = null
 
@@ -63,15 +73,18 @@ const padLevel = computed(() => (padConnected.value ? 'ok' : 'off'))
 const padText = computed(() => {
   if (!('getGamepads' in navigator)) return '浏览器不支持 Gamepad API（建议 Edge/Chrome）'
   return padConnected.value
-    ? '手柄已连接：左摇杆移动、右摇杆转向；A 急停 · B 停止 · Y 恢复'
+    ? '左摇杆移动 · X 顺转 / Y 逆转 · A 恢复 · B 停止 · LB 开夹 / RB 合夹'
     : '未检测到手柄：连接手柄后，在页面上按手柄任意键激活'
 })
 
 function dz(v) { return Math.abs(v) < DEADZONE ? 0 : v }
-
 function press(key) { if (store.state.connected) store.carPress(key) }
 function maybeRelease() { if (store.state.connected && !isLock.value) store.carRelease() }
 function doStop() { if (store.state.connected) store.carRelease() }
+function signAxis(v, neg) { // 转方向满速
+  if (Math.abs(v) < DEADZONE) return 0
+  return (v < 0 ? 1 : -1) * (neg ? -1 : 1)
+}
 
 function pollGamepad() {
   if (inputMode.value !== 'gamepad' || !store.state.connected) return
@@ -79,41 +92,64 @@ function pollGamepad() {
   const gp = pads.find((p) => p && p.connected)
   padConnected.value = !!gp
   if (!gp) {
-    if (padWasConnected) store.carVel(0, 0, 0)  // 断开瞬间 0 速一次
+    if (padWasConnected) { store.carVel(0, 0, 0); if (rsRole.value === 'arm') store.armPad(false) }
     padWasConnected = false
     return
   }
   padWasConnected = true
-  const axes = gp.axes
-  const lx = dz(axes[0] || 0), ly = dz(axes[1] || 0), rx = dz(axes[2] || 0)
-  if (isLock.value) {
-    // 点按锁定：摇杆越过死区 -> 锁存该方向满速持续；回中保持；B 停止
-    if (lx || ly || rx) {
-      store.carVel(
-        (ly < 0 ? 1 : ly > 0 ? -1 : 0) * CAR_LIMITS.linear,
-        (lx < 0 ? 1 : lx > 0 ? -1 : 0) * CAR_LIMITS.linear,
-        (rx < 0 ? 1 : rx > 0 ? -1 : 0) * CAR_LIMITS.angular,
-      )
-    }
-    // 回中不发：后端保持上一锁定速度
-  } else {
-    store.carVel(
-      -ly * CAR_LIMITS.linear,
-      -lx * CAR_LIMITS.linear,
-      -rx * CAR_LIMITS.angular,
-    )
-  }
+  const a = gp.axes
+  const lx = dz(a[AX.LX] || 0), ly = dz(a[AX.LY] || 0)
+  const rx = dz(a[AX.RX] || 0), ry = dz(a[AX.RY] || 0)
   const b = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed)
-  const nowA = b(BTN.A), nowB = b(BTN.B), nowY = b(BTN.Y)
-  if (nowA && !prevBtns.A) store.carEstop()
-  if (nowB && !prevBtns.B) doStop()
-  if (nowY && !prevBtns.Y) store.resume()
-  prevBtns.A = nowA; prevBtns.B = nowB; prevBtns.Y = nowY
-}
+  const now = { A: b(BTN.A), B: b(BTN.B), X: b(BTN.X), Y: b(BTN.Y), LB: b(BTN.LB), RB: b(BTN.RB) }
 
-// 切回键盘/按钮：确保手柄连续速度被清（否则后端残留旧速度继续跑）
+  // 夹爪：LB 开 / RB 合（边沿）
+  if (now.LB && !prevBtn.LB) store.gripper('open')
+  if (now.RB && !prevBtn.RB) store.gripper('close')
+  // A 恢复 / B 停止（边沿）
+  if (now.A && !prevBtn.A) store.resume()
+  if (now.B && !prevBtn.B) { locked.value = null; store.carRelease() }
+  Object.assign(prevBtn, now)
+
+  // 右摇杆用途
+  const armRole = rsRole.value === 'arm'
+  if (armRole) {
+    // 右摇杆上下 = lift、左右 = pan；十字键上下 = elbow_flex（前后）
+    const dpz = (b(BTN.DPAD_UP) ? 1 : 0) + (b(BTN.DPAD_DOWN) ? -1 : 0)
+    store.armPad(true, rx, ry, dpz)
+  } else if (rx !== 0 || ry !== 0) { /* 转向走下方 omega */ }
+
+  const spin = (now.X ? -1 : 0) + (now.Y ? 1 : 0)   // X 顺转(负 omega) / Y 逆转
+  if (isLock.value) {
+    // 点按锁定：输入越界即锁存满速方向，回中保持；B 已清
+    const dir = {
+      vx: signAxis(-ly, true) * CAR_LIMITS.linear,
+      vy: signAxis(-lx, true) * CAR_LIMITS.linear,
+      w: 0,
+    }
+    if (spin !== 0) dir.w = spin * CAR_LIMITS.angular
+    else if (!armRole && rx) dir.w = signAxis(rx, false) * CAR_LIMITS.angular * -1
+    if (dir.vx || dir.vy || dir.w) locked.value = dir
+    if (locked.value) store.carVel(locked.value.vx, locked.value.vy, locked.value.w)
+  } else {
+    // 按住：实时连续
+    let w = 0
+    if (spin !== 0) w = spin * CAR_LIMITS.angular
+    else if (!armRole && rx) w = -rx * CAR_LIMITS.angular
+    store.carVel(-ly * CAR_LIMITS.linear, -lx * CAR_LIMITS.linear, w)
+  }
+}
+const locked = ref(null)  // lock 模式锁存 (vx,vy,w)
+
 watch(inputMode, (v) => {
-  if (v !== 'gamepad' && store.state.connected) store.carRelease()
+  if (v !== 'gamepad' && store.state.connected) {
+    store.carRelease()
+    if (rsRole.value === 'arm') store.armPad(false)
+  }
+})
+watch(rsRole, (v) => {
+  try { localStorage.setItem('mv-rs-role', v) } catch { /* ignore */ }
+  if (inputMode.value === 'gamepad' && v !== 'arm' && store.state.connected) store.armPad(false)
 })
 
 function isTyping(e) { const t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') }
@@ -140,21 +176,24 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown)
   window.removeEventListener('keyup', onKeyUp)
   clearInterval(padTimer)
-  if (store.state.connected) store.carVel(0, 0, 0)
+  if (store.state.connected) { store.carVel(0, 0, 0); if (rsRole.value === 'arm') store.armPad(false) }
 })
 
 const carLevel = computed(() => store.state.car_estop ? 'warn' : (store.state.car_motion || store.state.car_vel) ? 'info' : 'off')
 const motionText = computed(() => {
-  if (store.state.car_estop) return '急停中（方向 / 手柄 A 自动恢复）'
-  if (store.state.car_vel) return `运行: vx ${store.state.car_vel[0].toFixed(2)} vy ${store.state.car_vel[1].toFixed(2)} ω ${store.state.car_vel[2].toFixed(2)}`
-  if (store.state.car_motion) return `运行: ${store.state.car_motion}`
+  if (store.state.car_estop) return '急停中（A / 方向自动恢复）'
+  if (store.state.car_vel) return `小车: vx ${store.state.car_vel[0].toFixed(2)} vy ${store.state.car_vel[1].toFixed(2)} ω ${store.state.car_vel[2].toFixed(2)}`
+  if (store.state.car_motion) return `小车: ${store.state.car_motion}`
   return '停'
 })
 const hintText = computed(() => {
   if (inputMode.value === 'gamepad') {
-    return isLock.value
-      ? '手柄·点按锁定：推摇杆一下即持续该方向（满速），回中保持；换向再推；B 停止 · A 急停 · Y 恢复'
-      : '手柄·按住移动：摇杆连续控制，回中即停；A 急停 · B 停止 · Y 恢复'
+    const arm = rsRole.value === 'arm'
+    return arm
+      ? '手柄·控制机械臂：右摇杆 ↑↓=shoulder_lift(上下)、←→=shoulder_pan(左右)、十字键 ↑↓=elbow_flex(前后)；接管遥操作；小车左摇杆 + X/Y 旋转'
+      : isLock.value
+        ? '手柄·点按锁定：推一下即持续该方向，回中保持；X/Y 锁定旋转；B 停止 · A 恢复 · LB/RB 夹爪'
+        : '手柄·按住移动：摇杆连续，回中即停；X/Y 按住旋转；A 恢复 · B 停止 · LB/RB 夹爪'
   }
   return isLock.value
     ? '点按一次即持续移动，再按其它方向切换；空格/停键停止；E 只停轮子不动臂（与 CLI 一致）'

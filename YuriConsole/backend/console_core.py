@@ -29,6 +29,11 @@ from dual_remote import _JsonTransport  # noqa: E402
 
 TICK_HZ = 20.0
 SEND_PERIOD = 1.0 / TICK_HZ
+ARM_PAD_STEP = 3.0            # 手柄控臂每 tick 关节增量（归一化单位）
+ARM_PAN_RANGE = (-100.0, 100.0)
+ARM_LIFT_RANGE = (-100.0, -38.0)   # arm.json joint_limits
+ARM_ELBOW_RANGE = (-100.0, 100.0)
+ARM_PAD_DZ = 0.15
 
 # 方向键名 -> Motion（与 CLI/文档一致）
 DIR_KEYS = {
@@ -48,6 +53,10 @@ class ConsoleCore:
         self.bridge = None
         self.connected = False
         self.arm_enabled = True
+        self.arm_pad_enabled = False    # 手柄右摇杆控机械臂（速率模式，接管 teleop）
+        self.arm_pad_xy = (0.0, 0.0)
+        self.arm_pad_cur = None          # (pan, lift) 归一化当前目标
+        self._arm_last_targets = {}      # 最近一次 teleop 目标（作手柄起步基准）
         self.car_motion = None          # Motion 或 None（键盘/按钮离散方向）
         self.car_vel = None             # (vx, vy, omega) m/s 连续速度（手柄摇杆）
         self.car_estop = False          # 小车 estop 置位（E 后需恢复）
@@ -199,9 +208,15 @@ class ConsoleCore:
         now = time.monotonic()
         # 0. 先发即时指令（急停/恢复等入队项；单写者：仅本 writer 线程 send）
         self._flush_pending()
-        # 1. 机械臂遥操作（teleop_joints 直写）
-        if self.arm_enabled and self.bridge is not None and self.leader is not None:
+        # 1. 机械臂：手柄控臂接管，否则 leader 遥操作（teleop_joints 直写）
+        if self.arm_pad_enabled:
+            self._arm_pad_tick()
+        elif self.arm_enabled and self.bridge is not None and self.leader is not None:
             self.bridge.step(self.leader, self.transport)
+            try:
+                self._arm_last_targets = dict(self.bridge._last_target or {})
+            except Exception:
+                pass
         # 2. 小车：手柄连续速度 > 离散方向 > 0 速刹停
         if self.car_vel is not None:
             speeds = build_speeds(*self.car_vel)
@@ -275,6 +290,67 @@ class ConsoleCore:
             self._enqueue_cmd(b'{"cmd":"car_resume"}\n')
             self.log("info", "已恢复（resume + car_resume）")
 
+    def _clamp_arm(self, pan: float, lift: float, elbow: float = 0.0):
+        lo_p, hi_p = ARM_PAN_RANGE
+        lo_l, hi_l = ARM_LIFT_RANGE
+        lo_e, hi_e = ARM_ELBOW_RANGE
+        return (max(lo_p, min(hi_p, pan)),
+                max(lo_l, min(hi_l, lift)),
+                max(lo_e, min(hi_e, elbow)))
+
+    def arm_pad_set(self, enabled: bool, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> None:
+        """手柄控机械臂（速率积分）：
+        x = 右摇杆左右 -> shoulder_pan；y = 右摇杆上下 -> shoulder_lift；
+        z = 十字键上下 -> elbow_flex（前后）。"""
+        with self._lock:
+            was = self.arm_pad_enabled
+            self.arm_pad_enabled = bool(enabled)
+            self.arm_pad_xy = (float(x), float(y), float(z))
+            if enabled and not was:
+                # 以最近遥操作目标为起点，避免切换瞬间跳变
+                pan = float(self._arm_last_targets.get("shoulder_pan", 0.0))
+                lift = float(self._arm_last_targets.get("shoulder_lift", -69.0))
+                elbow = float(self._arm_last_targets.get("elbow_flex", 0.0))
+                self.arm_pad_cur = self._clamp_arm(pan, lift, elbow)
+            if not enabled:
+                self.arm_pad_cur = None
+
+    def _arm_pad_tick(self) -> None:
+        """20Hz 速率积分：输入越死区则朝该方向持续移动，回中保持。"""
+        if self.transport is None or not self.connected:
+            return
+        x, y, z = self.arm_pad_xy
+        cur = self.arm_pad_cur
+        if cur is None:
+            cur = self._clamp_arm(
+                float(self._arm_last_targets.get("shoulder_pan", 0.0)),
+                float(self._arm_last_targets.get("shoulder_lift", -69.0)),
+                float(self._arm_last_targets.get("elbow_flex", 0.0)))
+            self.arm_pad_cur = cur
+        pan, lift, elbow = cur
+        if abs(x) > ARM_PAD_DZ or abs(y) > ARM_PAD_DZ or abs(z) > ARM_PAD_DZ:
+            pan += x * ARM_PAD_STEP          # 右推 -> pan 增大（方向待真机确认）
+            lift -= y * ARM_PAD_STEP         # 上推(y<0) -> lift 增大（抬）
+            elbow += z * ARM_PAD_STEP        # 十字键上(z>0) -> elbow 增大（方向待真机确认）
+            pan, lift, elbow = self._clamp_arm(pan, lift, elbow)
+            self.arm_pad_cur = (pan, lift, elbow)
+            self.transport.send({
+                "cmd": "teleop_joints",
+                "params": {"targets": {
+                    "shoulder_pan": round(pan, 2),
+                    "shoulder_lift": round(lift, 2),
+                    "elbow_flex": round(elbow, 2),
+                }},
+            })
+
+    def gripper_cmd(self, action: str) -> None:
+        """夹爪：open / close（close 走固件负载判定）。"""
+        if action not in ("open", "close"):
+            return
+        cmd = "open_gripper" if action == "open" else "close_gripper"
+        self._enqueue_cmd((json.dumps({"cmd": cmd, "params": {}}) + "\n").encode("utf-8"))
+        self.log("info", f"夹爪 {action}")
+
     def set_arm_enabled(self, on: bool) -> None:
         with self._lock:
             self.arm_enabled = bool(on)
@@ -312,6 +388,7 @@ class ConsoleCore:
                 "mock": self.mock,
                 "leader_port": self.leader_port,
                 "arm_enabled": self.arm_enabled,
+                "arm_pad_enabled": self.arm_pad_enabled,
                 "car_motion": motion,
                 "car_vel": self.car_vel,
                 "car_estop": self.car_estop,
