@@ -12,7 +12,7 @@
 轮子：用 YuriChassis/ 的 kiwi_drive.py 独立控制，与本脚本无关。
 
 运行前：
-  1. lerobot 0.6.1 已装(本机: C:\\Users\\21209\\lerobot_venv312)
+  1. lerobot 0.6.1 已装(本机: lerobot_venv312/（本仓库根）)
   2. 主动臂 USB 插好(默认 COM7)，从动臂 USB 插好(默认 COM4)
   3. 两块臂已上电、已校准(首次会自动触发校准, 需人摆臂配合)
   4. 停止按 Ctrl+C
