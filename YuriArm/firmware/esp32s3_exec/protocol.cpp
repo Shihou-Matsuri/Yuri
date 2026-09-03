@@ -248,9 +248,17 @@ bool handleCommand(FeetechBus& bus, FeetechBus& bus2, MotionController& motion,
       out["error"] = "missing targets";
     } else {
       float norm[NUM_JOINTS];
-      int16_t cur[NUM_JOINTS];
-      motion.readAllPositions(cur);   // 未指定关节保持当前位形
-      for (int i = 0; i < NUM_JOINTS; i++) norm[i] = MotionController::rawToNorm(JOINTS[i], cur[i]);
+      // 只有 targets 未覆盖的关节才需要当前位形；桥遥操作总发全 6 关节，
+      // 此时跳过 readAllPositions（省 6 次舵机总线读 ≈ 每条指令提速数倍），
+      // 否则大幅动作密集 move_joints 会让 ESP32 忙于读舵机、heartbeat 排队超时误急停。
+      bool needCurrent = (int)targets.size() < NUM_JOINTS;
+      if (needCurrent) {
+        int16_t cur[NUM_JOINTS];
+        motion.readAllPositions(cur);   // 未指定关节保持当前位形
+        for (int i = 0; i < NUM_JOINTS; i++) norm[i] = MotionController::rawToNorm(JOINTS[i], cur[i]);
+      } else {
+        for (int i = 0; i < NUM_JOINTS; i++) norm[i] = 0.0f;  // 占位，下面全被 targets 覆盖
+      }
       bool any = false;
       for (JsonPair kv : targets) {
         int idx;
