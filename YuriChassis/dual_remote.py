@@ -83,6 +83,35 @@ def _load_bridge() -> LeaderBridge:
     )
 
 
+class _JsonTransport:
+    """把 dict/bytes 都转成行分隔 JSON bytes 再交给底层 transport。
+
+    car_remote 的 TcpTransport/SerialTransport.send 只收 bytes（调用方自行编码），
+    而 LeaderBridge.step 直接 send dict——dual_remote 两者混用，这里统一适配。
+    """
+
+    def __init__(self, raw):
+        self._raw = raw
+
+    def send(self, obj) -> None:
+        if isinstance(obj, (bytes, bytearray)):
+            data = bytes(obj)
+        elif isinstance(obj, str):
+            data = obj.encode("utf-8")
+        else:
+            data = (json.dumps(obj) + "\n").encode("utf-8")
+        self._raw.send(data)
+
+    def ping_ok(self, *a, **kw):
+        return self._raw.ping_ok(*a, **kw)
+
+    def reconnect(self):
+        self._raw.reconnect()
+
+    def close(self):
+        self._raw.close()
+
+
 def main() -> int:
     if sys.platform != "win32":
         raise RuntimeError("键盘输入仅实现 Windows（msvcrt）")
@@ -95,9 +124,10 @@ def main() -> int:
     ap.add_argument("--leader-port", default=None, help="主动臂串口（默认读 leader.json）")
     args = ap.parse_args()
 
-    transport = (
+    raw_transport = (
         SerialTransport(args.serial) if args.serial else TcpTransport(args.host, args.port)
     )
+    transport = _JsonTransport(raw_transport)
     link_name = f"串口 {args.serial}" if args.serial else f"TCP {args.host}:{args.port}"
 
     # ---- 主动臂 + 桥 ----
