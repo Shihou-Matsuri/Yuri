@@ -220,8 +220,8 @@ void bleInit() {
 }
 
 void setup() {
-  Serial.begin(1000000);
-  Serial0.begin(1000000);   // UART0：CH343 USB 转串口 / 调试口（GPIO43/44）
+  Serial.begin(115200);
+  Serial0.begin(115200);   // UART0：CH343 USB 转串口 / 调试口（GPIO43/44）
   delay(300);
   Serial.println();
   Serial.println("[YuriArm ESP32-S3 exec] boot");
@@ -244,7 +244,8 @@ void setup() {
   server.begin();
   Serial.printf("[TCP] listening on :%d\n", TCP_PORT);
 
-  bleInit();
+  // BLE 已禁用（用户决策：只开 WiFi，降低射频/CPU 干扰，避免遥操作卡顿）
+  // bleInit();
   Serial.println("[ready] laptop: connect to AP, then TCP 192.168.4.1:8765");
 }
 
@@ -293,8 +294,9 @@ void loop() {
   tickMotion();
   handleStream(Serial);          // USB CDC（原生 USB 口）
   handleStream(Serial0);         // UART0（CH343 USB 转串口 / 调试口，默认 GPIO43/44）
-  bleProcessCommands();          // BLE 指令队列 -> 主循环处理
-  bleFlushPending();             // BLE 响应逐片发送
+  // BLE 已禁用（见 setup 注释），以下处理不再需要
+  // bleProcessCommands();       // BLE 指令队列 -> 主循环处理
+  // bleFlushPending();          // BLE 响应逐片发送
   handleClient();                // WiFi TCP 非阻塞处理（不饿死其他通道）
   delay(1);
 }
