@@ -10,6 +10,7 @@
 |---|---|
 | `feetech.py` | 飞特 STS 总线协议（含 `encode_motor_speed`：**BIT15=方向 + 低15位幅值**，不是补码） |
 | `kiwi_drive.py` | 主程序：三轮全向运动学 + WASD 键盘控制。ID7 左前/ID8 后/ID9 右前 |
+| `camera_car_drive.py` | 有线相机小车键盘控制。默认 COM21、ID5 前中 / ID6 后左 / ID4 后右 |
 | `car_remote.py` | WiFi TCP 键盘遥控入口 |
 | `car_remote_ble.py` | BLE 键盘遥控入口 |
 | `scan_ids.py` | 扫描总线在线舵机 ID |
@@ -28,6 +29,41 @@ C:\Users\21209\lerobot_venv312\Scripts\python.exe kiwi_drive.py
 ```
 
 > 端口/舵机 ID 在 `kiwi_drive.py` 顶部常量（PORT/BAUD/ID_LEFT 等）改。
+
+### 有线相机小车（独立于机械臂，前中 + 后左 + 后右）
+
+默认布局：
+
+```text
+      前中轮 ID5
+        |
+  ID6 后左轮 -- ID4 后右轮
+```
+
+默认轮轴角度为 `0° / 225° / 135°`，默认前轮正向、两只后轮反向。如果实际舵机 ID 或轮轴方向不同，用
+`--front-id`、`--rear-left-id`、`--rear-right-id` 和对应角度参数覆盖。
+
+GUI 中新增 `后左反向 ID6` 与 `后右反向 ID4` 两个开关；当前默认两个都勾选。
+窗口顶部有串口下拉框，可刷新串口列表并切换 `COM21` / `COMx`；切换时会先停止并释放旧端口。
+
+窗口顶部还提供“键盘 / 手柄”模式选择。手柄映射为：
+左摇杆 Y=前后，左摇杆 X=横移，右摇杆 X=转向；`A` 停止、`B` 急停、`Y` 恢复。
+切换模式或手柄断连时会自动停车。
+
+```powershell
+# 只扫描并确认 4/5/6 在线
+python camera_car_drive.py --port COM21 --scan
+
+# 单轮低速测试：先观察每个轮子的方向，再落地整车
+python camera_car_drive.py --port COM21 --one-wheel 4 --duration 0.5
+python camera_car_drive.py --port COM21 --one-wheel 5 --duration 0.5
+python camera_car_drive.py --port COM21 --one-wheel 6 --duration 0.5
+
+# WASD 键盘控制：W/S 前后、A/D 横移、Z/X 自旋、空格停、E 急停、Q 退出
+python camera_car_drive.py --port COM21
+```
+
+也可以直接运行本目录的 `camera_car_drive.bat`，它已默认使用 `COM21`。
 
 ## 无线键盘遥控
 
