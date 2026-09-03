@@ -217,7 +217,7 @@ def main() -> int:
     if link == "serial" and not args.mock:
         try:
             import serial as _ser
-            _probe = _ser.Serial(args.serial, 460800, timeout=0.2)
+            _probe = _ser.Serial(args.serial, 1000000, timeout=0.2)
             _probe.close()
             print(f"[leader_remote] 串口 {args.serial} 可访问")
         except Exception as _pe:  # noqa: BLE001

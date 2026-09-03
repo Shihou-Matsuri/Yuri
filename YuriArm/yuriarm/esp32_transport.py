@@ -99,11 +99,11 @@ class TcpEsp32Transport(Esp32Transport):
 
 
 class SerialEsp32Transport(Esp32Transport):
-    """USB UART0（ESP32 板载 CH343/调试口）。波特率 460800（指令口，非舵机 1M）。"""
+    """USB UART0（ESP32 板载 CH343/调试口）。波特率 1000000（指令口，非舵机 1M）。"""
 
     name = "serial"
 
-    def __init__(self, port: str, baud: int = 460800, timeout_s: float = 0.5):
+    def __init__(self, port: str, baud: int = 1000000, timeout_s: float = 0.5):
         import serial  # 惰性导入（仅真机路径需要）
 
         self._timeout_s = timeout_s
