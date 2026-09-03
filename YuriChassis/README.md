@@ -10,7 +10,8 @@
 |---|---|
 | `feetech.py` | 飞特 STS 总线协议（含 `encode_motor_speed`：**BIT15=方向 + 低15位幅值**，不是补码） |
 | `kiwi_drive.py` | 主程序：三轮全向运动学 + WASD 键盘控制。ID7 左前/ID8 后/ID9 右前 |
-| `car_remote.py` | 遥控入口 |
+| `car_remote.py` | WiFi TCP 键盘遥控入口 |
+| `car_remote_ble.py` | BLE 键盘遥控入口 |
 | `scan_ids.py` | 扫描总线在线舵机 ID |
 | `calibrate_direction.py` | 单轮正转测物理转向 |
 | `single_wheel_calib.py` | 单轮标定：看整车滑向反解驱动方位 |
@@ -27,6 +28,22 @@ C:\Users\21209\lerobot_venv312\Scripts\python.exe kiwi_drive.py
 ```
 
 > 端口/舵机 ID 在 `kiwi_drive.py` 顶部常量（PORT/BAUD/ID_LEFT 等）改。
+
+## 无线键盘遥控
+
+WiFi 和 BLE 都复用 `kiwi_drive.py` 的运动学与键位映射，目标是 ESP32-S3 无线执行端。
+
+```bash
+# WiFi TCP：需要先连接 ESP32 AP（YuriArm-AP / yuriarm123）
+python car_remote.py
+
+# BLE：自动扫描 YuriArm-S3，也可用 --address 指定 MAC
+python car_remote_ble.py
+python car_remote_ble.py --address AA:BB:CC:DD:EE:FF
+```
+
+按键：`W/S` 前后、`A/D` 横移、`Z/X` 旋转、空格停止、`E` 急停、`Q` 退出。
+远程脚本以 20Hz 持续下发 `car_drive`，退出时会先清速再 `car_stop`。
 
 ## 跑测试（无需硬件）
 

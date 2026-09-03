@@ -63,7 +63,8 @@
 # 5. 三轮回正后再全向点动：ID7=300 时整车应滑向"前左"（按 kiwi_drive.py 标定）
 
 # 6. 键盘无线遥控（车体抬空首测三轮方向后落地）
-& E:\Anaconda\envs\lerobot\python.exe YuriChassis\car_remote.py
+& E:\Anaconda\envs\lerobot\python.exe YuriChassis\car_remote.py       # WiFi TCP
+& E:\Anaconda\envs\lerobot\python.exe YuriChassis\car_remote_ble.py   # BLE，自动扫描 YuriArm-S3
 #   W/S前后 A/D横移 Z/X旋转 空格停 E急停 Q退出
 ```
 
