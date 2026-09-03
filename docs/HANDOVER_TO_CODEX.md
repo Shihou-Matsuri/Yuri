@@ -7,7 +7,7 @@
 ## 0. 一句话现状
 
 机械臂遥操作（teleop_joints 直写）✅ 真机验证通过；轮子 WiFi 键盘遥控 ✅ 通过；
-**dual_remote（同时控制）刚写完，transport bug 已修，尚未真机实测** ← 你的首要任务。
+**dual_remote（同时控制）✅ 真机实测通过（2026-09-04 修复 stop/E/exit 三个 bug），首要任务完成。**
 
 ## 1. 架构（三句话）
 
@@ -34,7 +34,9 @@
 
 ## 3. 首要任务：dual_remote 真机实测
 
-**未验证**。预期行为：手握主动臂 → 从动臂跟随；同时 W/S/A/D/Z/X 键盘 → 轮子转。
+**✅ 已完成（2026-09-04）**：真机实测通过。本轮修复三个 bug——空格停不住（只发 heartbeat 不刹停）、
+Q 退出车不停（收尾未等 ESP32 处理就 close）、E 使臂失效（全局 estop 无显式恢复）。详见 git log / SOUL.md。
+历史预期行为：手握主动臂 → 从动臂跟随；同时 W/S/A/D/Z/X 键盘 → 轮子转。
 已知修复：transport 层 dict/bytes 适配（提交 015cd7b），import 链路验证过。
 
 实测命令（用户自己 cmd 终端跑，键盘程序必须命令行跑，PyCharm 抓不到键）：
@@ -79,7 +81,7 @@ C:\Users\21209\lerobot_venv312\Scripts\python.exe dual_remote.py   :: 默认 WiF
 
 ## 7. 后续方向（未定优先级）
 
-- dual_remote 实测通过后：提交 + 更新 README/SOUL.md
+- ✅ dual_remote 实测已通过（2026-09-04，修复后已提交）
 - YuriEye 视觉识别与机械臂集成（抓取闭环，另一台电脑做过，本机未接）
 - 底盘落地实测（当前只抬空验证方向）
 - 可选：dual_remote 加单实例锁防多开

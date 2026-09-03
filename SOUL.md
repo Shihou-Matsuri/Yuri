@@ -58,6 +58,11 @@ Yuri = 笔记本（感知/规划/遥操作）→ ESP32-S3（无线执行端）�
 6. 主动臂 gripper 舵机偶发读数恒 0/离线——先物理重插再怀疑软件。
 7. 大幅动作"卡住"先查 `status` 的 `estop`/`watchdog_ok`，再查负载，
    别直接猜参数。
+8. **轮子"停" = 持续下发 0 速（car_drive [0,0,0]）**，不能只发 heartbeat：
+   固件 heartbeat 同时喂小车 watchdog，只发 heartbeat 会让小车保持最后速度
+   （dual_remote 空格停不住，真机踩过；car_remote 一直发 0 速所以没事）。
+9. **急停分范围**：全局 estop 关从动臂扭矩并置位，恢复须显式 resume；
+   dual_remote 的 E 只急停轮子（car_stop），否则按 E 后机械臂"连接失效"。
 
 ## 安全底线（不许为了功能牺牲）
 

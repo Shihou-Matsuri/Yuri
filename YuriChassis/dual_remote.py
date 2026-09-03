@@ -12,12 +12,16 @@
 
 按键说明:
     机械臂: 直接手握主动臂操作（不需要键盘）
-    轮子:   W/S前后 A/D横移 Z/X旋转 空格停 E急停 Q退出
+    轮子:   W/S前后 A/D横移 Z/X旋转 空格停 E轮子急停 Q退出
 
 安全:
     - 机械臂与小车共用 ESP32 但走不同 UART（UART1/UART2 独立），
       协议层不互斥；但舵机电流叠加，供电须足够（首测车体抬空）。
-    - 退出/Ctrl+C: 小车清 0 速刹停 + 全局 estop（从动臂扭矩关）。
+    - 停止语义：无轮子运动目标时每 tick 下发 car_drive [0,0,0] 刹停。
+      不能只发 heartbeat——固件 heartbeat 同时喂小车 watchdog，
+      只发 heartbeat 会让小车保持最后速度继续转（空格/停止会失效）。
+    - E = 轮子急停（car_stop，只停小车，不影响机械臂遥操作）；
+      退出/Ctrl+C = 小车清 0 速刹停 + 全局 estop（从动臂扭矩关）。
     - 连接断开自动重连（TCP），重连后 resume + car_resume。
 
 用法:
@@ -160,11 +164,15 @@ def main() -> int:
                 # 1. 机械臂：读主动臂 → 变化则 teleop_joints
                 bridge.step(leader, transport)
 
-                # 2. 轮子：目标非零才发 car_drive（零速由 heartbeat 喂狗保持刹停）
-                if motion is not None:
+                # 2. 轮子：每 tick 无条件下发 car_drive；无运动目标 -> 0 速刹停。
+                #    不能只在 motion 非 None 时发——固件 heartbeat 同时喂小车 watchdog，
+                #    只发 heartbeat 会让小车保持最后速度继续转（空格/停止失效）。
+                if motion is None:
+                    speeds = [0, 0, 0]
+                else:
                     vx, vy, omega = kiwi_drive.MOTION_VECTORS[motion]
                     speeds = build_speeds(vx, vy, omega)
-                    transport.send(encode_command(speeds))
+                transport.send(encode_command(speeds))
 
                 # 3. heartbeat 喂固件看门狗（从动臂 + 小车）
                 transport.send(b'{"cmd":"heartbeat"}\n')
@@ -175,15 +183,14 @@ def main() -> int:
                 if key == "q":
                     motion = None
                     stop_reason = RemoteStop.QUIT
-                    print("\n[dual_remote] Q -> 退出")
-                    transport.send(b'{"cmd":"car_drive","params":{"raw":[0,0,0]}}\n')
-                    transport.send(b'{"cmd":"estop"}\n')
+                    print("\n[dual_remote] Q -> 退出（收尾刹停+estop）")
                     return 0
                 if key == "e":
                     motion = None
                     car_estop_active = True
-                    print("[dual_remote] E -> 急停")
-                    transport.send(b'{"cmd":"estop"}\n')   # 全局急停（臂+车）
+                    # 只急停轮子（car_stop），不碰机械臂。全局 estop 会关从动臂扭矩并置位，
+                    # 之后只能靠按轮子键恢复——会让遥操作"连接失效"（用户实测 bug）。
+                    print("[dual_remote] E -> 轮子急停(car_stop)，机械臂不受影响")
                     transport.send(b'{"cmd":"car_stop"}\n')
                     continue
                 if key == " ":
@@ -193,10 +200,11 @@ def main() -> int:
                 new_motion = kiwi_drive.KEY_MOTIONS.get(key)
                 if new_motion is not None:
                     if car_estop_active:
-                        transport.send(b'{"cmd":"resume"}\n')
+                        # 只恢复小车（car_resume）。不发全局 resume：E 已不置全局 estop，
+                        # 避免顺带 resume 从动臂导致其突跳回 leader 姿态。
                         transport.send(b'{"cmd":"car_resume"}\n')
                         car_estop_active = False
-                        print("[dual_remote] 已恢复(resume)")
+                        print("[dual_remote] 轮子已恢复(car_resume)")
                     motion = new_motion
                     print(f"[dual_remote] 轮子: {motion.value}")
 
@@ -218,13 +226,21 @@ def main() -> int:
         stop_reason = RemoteStop.ERROR
         print(f"\n[dual_remote] 连接中断: {exc}")
     finally:
-        # 收尾：小车刹停（保扭矩防溜坡）+ 机械臂 estop（关扭矩）
+        # 收尾：小车清 0 速刹停（保扭矩防溜坡）+ 机械臂 estop（关扭矩）。
+        # 发完等 0.2s 让 ESP32 处理完再 close——否则 close 即断开，
+        # 刹停/estop 可能没被处理，车保持最后速度（Q 退出后仍在转）。
+        sent = False
         try:
             transport.send(b'{"cmd":"car_drive","params":{"raw":[0,0,0]}}\n')
             transport.send(b'{"cmd":"estop"}\n')
-            print(f"[dual_remote] 已刹停 + 机械臂 estop（{stop_reason.value}）")
+            sent = True
         except (ConnectionError, OSError):
             pass
+        if sent:
+            print(f"[dual_remote] 已刹停 + 机械臂 estop（{stop_reason.value}）")
+            time.sleep(0.2)
+        else:
+            print(f"[dual_remote] 连接不可用，刹停指令未发出（{stop_reason.value}；固件 watchdog 将兜底刹停）")
         try:
             leader.disconnect()
         except Exception:  # noqa: BLE001

@@ -10,7 +10,7 @@
 | 目录 | 说明 |
 |---|---|
 | `YuriArm/` | SO-101 机械臂：ESP32-S3 固件（`firmware/esp32s3_exec/`）+ 遥操作桥（`yuriarm/`+`tools/leader_remote.py`） |
-| `YuriChassis/` | 三轮 kiwi 底盘：运动学 + WiFi 键盘遥控（`car_remote.py`） |
+| `YuriChassis/` | 三轮 kiwi 底盘：运动学 + WiFi 键盘遥控（`car_remote.py` / `dual_remote.py` 臂+轮同控） |
 | `YuriEye/` | 彩色立方体识别（YOLOv8 + 相机标定），感知层 |
 | `LeKiwiTeleop/` | LeKiwi 有线主从遥操作参考（独立文档，非本架构） |
 | `SOUL.md` | **设计灵魂与教训，先读** |
@@ -22,6 +22,7 @@
 | ESP32-S3 无线执行端（WiFi AP + USB，6×STS3215） | ✅ 真机验证 |
 | **主动臂 → 从动臂遥操作（teleop_joints 直写）** | ✅ 真机验证：小幅/大幅/多关节跟手，不卡死 |
 | 小车 WiFi 键盘遥控（car_drive 电机恒速） | ✅ 真机验证（含自动重连） |
+| **机械臂 + 小车同时控制（dual_remote）** | ✅ 真机验证：臂跟手 + 轮键盘同跑；空格停 / E 轮子急停 / Q 刹停退出 |
 | BLE 通道 | 🔇 已禁用（用户决策：只留 WiFi） |
 | YuriEye 视觉识别 | 🔜 待与机械臂集成 |
 
@@ -58,6 +59,17 @@ C:\Users\21209\lerobot_venv312\Scripts\python.exe car_remote.py
 ```
 
 W/S 前后 · A/D 横移 · Z/X 旋转 · 空格停 · E 急停 · Q 退出（车体抬空首测）。
+
+### 机械臂 + 小车同时控制（dual_remote）
+
+```powershell
+cd YuriChassis
+C:\Users\21209\lerobot_venv312\Scripts\python.exe dual_remote.py
+```
+
+- 前置：主动臂 COM7 + ESP32（默认 WiFi TCP，或 `--serial COM8`）；从动臂 + 小车供电；车体抬空首测。
+- 操作：手握主动臂 → 从动臂跟随；W/S/A/D/Z/X 轮子 · 空格停 · E 轮子急停（不动臂）· Q 退出（刹停+estop）。
+- 键盘程序必须命令行跑（PyCharm 抓不到键）。
 
 ### 烧录固件
 
