@@ -47,24 +47,24 @@
 
 ```powershell
 # 1. 用板载 CH343/UART0 口（或原生 USB）确认 ESP32 在线
-& E:\Anaconda\envs\lerobot\python.exe YuriArm\tools\esp32_smoke.py --serial COM19 --ping-only
+& .\lerobot_venv312\Scripts\python.exe YuriArm\tools\esp32_smoke.py --serial COM19 --ping-only
 
 # 2. 总线诊断（uart2 按 CAR_SERVO_IDS=7/8/9 ping；确认接线方向/供电）
-& E:\Anaconda\envs\lerobot\python.exe YuriArm\tools\esp32_smoke.py --serial COM19 --diag
+& .\lerobot_venv312\Scripts\python.exe YuriArm\tools\esp32_smoke.py --serial COM19 --diag
 
 # 3. 小车状态（确认 drive_mode/drive_active 字段返回）
-& E:\Anaconda\envs\lerobot\python.exe YuriArm\tools\esp32_ble.py --cmd car_status
+& .\lerobot_venv312\Scripts\python.exe YuriArm\tools\esp32_ble.py --cmd car_status
 
 # 4. 逐轮点动验证方向（车体抬空！ID7 正转 1 秒 → 停 → 确认轮向与本地 USB 实测一致）
-& E:\Anaconda\envs\lerobot\python.exe YuriArm\tools\esp32_ble.py --cmd car_drive --params '{"speeds":{"7":300}}'
+& .\lerobot_venv312\Scripts\python.exe YuriArm\tools\esp32_ble.py --cmd car_drive --params '{"speeds":{"7":300}}'
 #   ...观察 1s 后自动发 car_drive 全 0 或 car_stop 刹停
-& E:\Anaconda\envs\lerobot\python.exe YuriArm\tools\esp32_ble.py --cmd car_stop
+& .\lerobot_venv312\Scripts\python.exe YuriArm\tools\esp32_ble.py --cmd car_stop
 
 # 5. 三轮回正后再全向点动：ID7=300 时整车应滑向"前左"（按 kiwi_drive.py 标定）
 
 # 6. 键盘无线遥控（车体抬空首测三轮方向后落地）
-& E:\Anaconda\envs\lerobot\python.exe YuriChassis\car_remote.py       # WiFi TCP
-& E:\Anaconda\envs\lerobot\python.exe YuriChassis\car_remote_ble.py   # BLE，自动扫描 YuriArm-S3
+& .\lerobot_venv312\Scripts\python.exe YuriChassis\car_remote.py       # WiFi TCP
+& .\lerobot_venv312\Scripts\python.exe YuriChassis\car_remote_ble.py   # BLE，自动扫描 YuriArm-S3
 #   W/S前后 A/D横移 Z/X旋转 空格停 E急停 Q退出
 ```
 

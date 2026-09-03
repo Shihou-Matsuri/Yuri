@@ -155,11 +155,7 @@ class LeaderBridge:
         leader: LeaderLike,
         transport: TransportLike,
     ) -> dict[str, float] | None:
-        """单步：读主动臂 -> 映射/安全/死区；目标变化超死区才发 move_joints。
-
-        喂看门狗由 run() 每周期发 heartbeat 承担（本方法不无条件发 move_joints，
-        避免"目标不变也刷 move_joints"在固件插值结束后不再喂狗的问题）。
-        """
+        """单步：读主动臂 -> 映射/安全；按指令模式决定是否发新目标。"""
         if self._estop:
             return None
 
@@ -188,17 +184,16 @@ class LeaderBridge:
         if self._apply_speed_limit:
             mapped = self._limit_velocity(mapped)
 
-        # 4. 死区门控发送：目标变化超死区才发 move_joints。
-        #    不能每帧无条件发——固件 moveToNorm 在插值中收到新目标会重置 from_ 重新插值，
-        #    若 leader 读数带微抖(±0.5°)导致每帧目标微变，插值永远被打断重来，
-        #    大幅/多舵机运动会卡死（舵机每帧只走一小步就被重新规划）。
-        #    静止抖动由此抑制；大幅动作目标变化大，正常触发发送。
-        # 5. 兜底补发：leader 停住后若从动臂尚未到位（此前某帧漏发/被打断），
-        #    每 _resend_period_s 无条件补发一次当前目标，保证最终到位（防"停半路"）。
+        # 4. 发送门控：teleop_joints（直写）每帧都发最新目标；
+        #    move_joints（插值）按死区抑制，防微抖反复重置插值，另兜底补发防停半路。
         self._last_move_target = dict(mapped)
-        changed = self._targets_changed(mapped)
         now = time.monotonic()
-        if changed or (now - self._last_send_t >= self._resend_period_s):
+        if self._cmd_name != "teleop_joints":
+            changed = self._targets_changed(mapped)
+            send = changed or (now - self._last_send_t >= self._resend_period_s)
+        else:
+            send = True
+        if send:
             self._last_send_t = now
             self._send_move_joints(transport, mapped)
         self._last_target = dict(mapped)

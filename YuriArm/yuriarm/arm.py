@@ -198,7 +198,7 @@ class LerobotArm(ArmBackend):
             from lerobot.robots.so101_follower.config_so101_follower import SO101FollowerConfig
         except ImportError as e:
             raise ArmError(
-                "无法导入 lerobot（请使用 lerobot conda 环境运行真机模式）"
+                "无法导入 lerobot（请使用仓库根 lerobot_venv312 运行真机模式）"
             ) from e
 
         arm_cfg = self._config.arm

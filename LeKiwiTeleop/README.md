@@ -19,13 +19,12 @@
 ## 环境
 
 ```text
-Python 3.12 venv + lerobot 0.6.1（venv 在仓库根 `lerobot_venv312/`）
+Python 3.12 venv + lerobot 0.6.1（venv 在仓库根 `lerobot_venv312/`，重建见根 `ENVIRONMENT.md`）
 源码：github.com/huggingface/lerobot (tag v0.6.1)
 端口示例：主动臂 COM7 | 从动臂 COM4（以实际为准）
 ```
 
-> 本机注意：学校网络 TLS 劫持会让 `uv`/`curl` 装包失败（证书是 njmu.edu.cn）。
-> 用 venv 自带 `pip`（走 Windows 系统证书）可绕过。
+> 若网络 TLS 劫持让 `uv` 失败，可用 venv 自带 `pip`（走 Windows 系统证书）绕过，见根 `ENVIRONMENT.md`。
 
 ## 硬件接线
 

@@ -21,3 +21,6 @@ YuriEye/ml/weights/
 *.spec
 node_modules/
 lerobot_venv312/
+
+# uv 本地工具环境（YuriEye ML 用）
+YuriEye/.venv/

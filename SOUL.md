@@ -81,7 +81,7 @@ Yuri = 笔记本（感知/规划/遥操作）→ ESP32-S3（无线执行端）�
 - 主动臂 COM7（CH343）/ ESP32 COM8（115200 指令口）。
 - 烧录：`arduino-cli upload -p COM8 --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc`，
   需用户 BOOT+RESET。
-- 学校网络 TLS MITM：装包用 pip 系统证书，uv/rustls 会失败。
+- 学校网络 TLS MITM：装包用 pip 系统证书，uv/rustls 可能失败（见根 `ENVIRONMENT.md`）。
 
 ## 调试方法论（本次最大的教训）
 

@@ -14,11 +14,13 @@
 
 ## 环境
 
-独立 GPU 环境 `yurieye`（勿动 `lerobot` 环境的 CPU torch）：
+推荐在独立 GPU venv 中训练（勿动仓库根 `lerobot_venv312` 的 CPU torch）：
 
 ```bash
-conda activate yurieye
-python -c "import torch; print(torch.cuda.is_available())"   # True
+uv venv .venv --python 3.10
+uv pip install --python .venv\Scripts\python.exe torch torchvision --index-url https://download.pytorch.org/whl/cu128
+uv pip install --python .venv\Scripts\python.exe -r requirements.txt -r ml/requirements.txt
+.venv\Scripts\python.exe -c "import torch; print(torch.cuda.is_available())"   # True
 ```
 
 安装细节（镜像、轮子文件名坑）见 [scripts/setup_env.md](../scripts/setup_env.md)。

@@ -36,11 +36,11 @@
 powershell -ExecutionPolicy Bypass -File YuriArm\firmware\esp32s3_exec\flash.ps1
 
 # 测试（PC 用 USB 连 COM18）
-& E:\Anaconda\envs\lerobot\python.exe YuriArm\tools\esp32_smoke.py --serial COM18
-& E:\Anaconda\envs\lerobot\python.exe YuriArm\tools\esp32_ble.py --status --telemetry
+& .\lerobot_venv312\Scripts\python.exe YuriArm\tools\esp32_smoke.py --serial COM18
+& .\lerobot_venv312\Scripts\python.exe YuriArm\tools\esp32_ble.py --status --telemetry
 
 # BLE 移动测试（心跳自动喂狗）
-& E:\Anaconda\envs\lerobot\python.exe YuriArm\tools\esp32_ble.py --move '{"shoulder_lift":30}' --duration 2
+& .\lerobot_venv312\Scripts\python.exe YuriArm\tools\esp32_ble.py --move '{"shoulder_lift":30}' --duration 2
 ```
 
 ## 已知坑

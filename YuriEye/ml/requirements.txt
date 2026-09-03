@@ -1,8 +1,7 @@
 # YuriEye ML 路径依赖（检测/分类模型训练）
-# 建议在独立 conda 环境安装（见 ml/README.md）：
-#   conda create -n yurieye python=3.10
-#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
-#   pip install -r ml/requirements.txt
+# 建议在独立 GPU venv 安装（见 ml/README.md 与 scripts/setup_env.md）：
+#   uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+#   uv pip install -r YuriEye\ml\requirements.txt
 ultralytics>=8.3.0
 opencv-python>=4.8
 numpy>=1.24

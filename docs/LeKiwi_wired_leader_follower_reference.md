@@ -2,7 +2,7 @@
 
 目标：在一台装有 LeRobot 的笔记本上，用**主动臂（leader）**遥控**装在小车上的从动臂（follower SO-ARM101）**，同时能用键盘开动小车。
 
-> 前提：本机已装好 LeRobot 环境（conda 环境 `lerobot` + 克隆的 `~/lerobot`）。
+> 前提：本机已装好 LeRobot 环境（本仓库根 `lerobot_venv312/` + 对应的 lerobot 源码）。
 > 如果你还没装，先按 Seeed wiki「安装 LeRobot」章节装好再回来。
 
 ---
@@ -46,9 +46,9 @@ COM4 = 从动臂 follower
 
 ## 三、改配置文件
 
-配置文件在克隆的 lerobot 里：
+配置文件在 lerobot 源码里（editable 安装位置可用 `pip show lerobot` 查询）：
 ```text
-~/lerobot/lerobot/common/robot_devices/robots/configs.py
+<lerobot 源码>/lerobot/common/robot_devices/robots/configs.py
 ```
 
 找到 `LeKiwiRobotConfig`，改成下面这样（**有线版**）。
@@ -138,7 +138,7 @@ class LeKiwiRobotConfig(RobotConfig):
 
 校准**主动臂**：
 ```bash
-cd ~/lerobot
+cd <lerobot 源码目录>
 python lerobot/scripts/control_robot.py \
   --robot.type=lekiwi \
   --robot.cameras='{}' \
@@ -165,7 +165,7 @@ python lerobot/scripts/control_robot.py \
 
 **终端1 —— 运行/执行侧：**
 ```bash
-cd ~/lerobot
+cd <lerobot 源码目录>
 python lerobot/scripts/control_robot.py \
   --robot.type=lekiwi \
   --control.type=remote_robot
@@ -173,7 +173,7 @@ python lerobot/scripts/control_robot.py \
 
 **终端2 —— 遥控侧（你手握主动臂）：**
 ```bash
-cd ~/lerobot
+cd <lerobot 源码目录>
 python lerobot/scripts/control_robot.py \
   --robot.type=lekiwi \
   --control.type=teleoperate \

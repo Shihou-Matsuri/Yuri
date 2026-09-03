@@ -23,11 +23,8 @@
 
 ## 环境
 
-真机模式需要 `lerobot` conda 环境（与父仓库共用，Python 3.10 + scservo_sdk）：
-
-```powershell
-& E:\Anaconda\envs\lerobot\python.exe -m unittest discover -s YuriArm\tests   # 跑测试
-```
+真机模式需要仓库根 venv `lerobot_venv312/`（Python 3.12 + lerobot + scservo_sdk）。
+安装/重建方式见仓库根 `ENVIRONMENT.md`。
 
 ## 快速开始（离线，`--mock` 仿真后端，无需硬件）
 
@@ -35,7 +32,7 @@
 cd YuriArm
 
 # 1) 交互式控制台（仿真）
-& E:\Anaconda\envs\lerobot\python.exe -m yuriarm --mock
+& ..\lerobot_venv312\Scripts\python.exe -m yuriarm --mock
 #   move --gripper=100          # 张开夹爪
 #   teach pick_high             # 记录当前位形为 pick_high
 #   move --shoulder_lift=-20 --elbow_flex=20
@@ -47,28 +44,28 @@ cd YuriArm
 #   exit
 
 # 2) 单条命令（每次独立进程，位置从零开始，适合测试协议）
-& E:\Anaconda\envs\lerobot\python.exe -m yuriarm --mock status
-& E:\Anaconda\envs\lerobot\python.exe -m yuriarm --mock move --shoulder_lift=30 --duration 0.3
-& E:\Anaconda\envs\lerobot\python.exe -m yuriarm --mock telemetry
+& ..\lerobot_venv312\Scripts\python.exe -m yuriarm --mock status
+& ..\lerobot_venv312\Scripts\python.exe -m yuriarm --mock move --shoulder_lift=30 --duration 0.3
+& ..\lerobot_venv312\Scripts\python.exe -m yuriarm --mock telemetry
 
 # 3) 冒烟测试（M0）：连接→拾取→断开
-& E:\Anaconda\envs\lerobot\python.exe -m yuriarm --mock bench
+& ..\lerobot_venv312\Scripts\python.exe -m yuriarm --mock bench
 ```
 
 ## 真机模式（SO-101 follower，默认 COM7）
 
 ```powershell
 cd YuriArm
-& E:\Anaconda\envs\lerobot\python.exe -m yuriarm connect      # 需标定文件存在
-& E:\Anaconda\envs\lerobot\python.exe -m yuriarm calibrate    # 首次：交互式标定（按提示操作）
+& ..\lerobot_venv312\Scripts\python.exe -m yuriarm connect      # 需标定文件存在
+& ..\lerobot_venv312\Scripts\python.exe -m yuriarm calibrate    # 首次：交互式标定（按提示操作）
 # 交互式示教姿态（真机）：进入控制台后
-& E:\Anaconda\envs\lerobot\python.exe -m yuriarm
+& ..\lerobot_venv312\Scripts\python.exe -m yuriarm
 #   connect
 #   手动把臂摆到目标正上方（夹爪张开）→ teach pick_high
 #   手动下压到手指套住方块的位置（夹爪张开）→ teach pick_low
 #   手动移到料篮上方 → teach drop
 #   pick                          # 执行拾取周期
-& E:\Anaconda\envs\lerobot\python.exe -m yuriarm bench         # 台上夹取冒烟测试
+& ..\lerobot_venv312\Scripts\python.exe -m yuriarm bench         # 台上夹取冒烟测试
 ```
 
 > ⚠️ `pick_high` / `pick_low` 必须**夹爪张开**时示教（夹取动作由 `close_gripper` 用负载判定完成）。
@@ -79,13 +76,13 @@ cd YuriArm
 
 ```powershell
 # 终端 1：启动服务器（默认 127.0.0.1:8765，仅本机）
-& E:\Anaconda\envs\lerobot\python.exe -m yuriarm --mock serve --port 8765
+& ..\lerobot_venv312\Scripts\python.exe -m yuriarm --mock serve --port 8765
 
 # 终端 2：发送指令
-& E:\Anaconda\envs\lerobot\python.exe tools\send_command.py --port 8765 --cmd ping
-& E:\Anaconda\envs\lerobot\python.exe tools\send_command.py --port 8765 --cmd move_joints --params '{"targets":{"shoulder_lift":30},"duration":2}'
-& E:\Anaconda\envs\lerobot\python.exe tools\send_command.py --port 8765 --cmd telemetry
-& E:\Anaconda\envs\lerobot\python.exe tools\send_command.py --port 8765 --cmd estop
+& ..\lerobot_venv312\Scripts\python.exe tools\send_command.py --port 8765 --cmd ping
+& ..\lerobot_venv312\Scripts\python.exe tools\send_command.py --port 8765 --cmd move_joints --params '{"targets":{"shoulder_lift":30},"duration":2}'
+& ..\lerobot_venv312\Scripts\python.exe tools\send_command.py --port 8765 --cmd telemetry
+& ..\lerobot_venv312\Scripts\python.exe tools\send_command.py --port 8765 --cmd estop
 ```
 
 任何程序（Python/脚本/GUI/未来 ML 管线）都可以连 127.0.0.1:8765 发 JSON：
@@ -114,7 +111,7 @@ cd YuriArm
 ## 测试
 
 ```powershell
-& E:\Anaconda\envs\lerobot\python.exe -m unittest discover -s YuriArm\tests -v
+& ..\lerobot_venv312\Scripts\python.exe -m unittest discover -s YuriArm\tests -v
 ```
 
 覆盖：协议编解码、Mock 后端运动/限位/急停/夹取判定/拾取周期、规划排序/路径、

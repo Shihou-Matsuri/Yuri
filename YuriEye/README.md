@@ -14,8 +14,8 @@
 
 | 用途 | 环境 | 说明 |
 |---|---|---|
-| ML（推荐） | `yurieye` | Python 3.10 + torch 2.11+cu128 + ultralytics，RTX 5070 Ti |
-| CV 基线/标注 | `lerobot` | Python 3.10 + OpenCV 4.12 + numpy（现有 LeRobot 环境） |
+| ML（推荐） | `YuriEye/.venv` 或独立 uv env | Python 3.10 + torch cu128 + ultralytics，RTX 5070 Ti |
+| CV 基线/标注 | 仓库根 `lerobot_venv312` | Python 3.12 + lerobot + OpenCV + numpy |
 
 环境安装详见 [scripts/setup_env.md](scripts/setup_env.md)。
 

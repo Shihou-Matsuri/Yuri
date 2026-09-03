@@ -44,6 +44,8 @@
 
 ## 快速开始
 
+> 仓库根 `lerobot_venv312/` 是默认 Python 环境；重建/装包说明见 [ENVIRONMENT.md](ENVIRONMENT.md)。
+
 ### 主动臂 → 从动臂遥操作（本机 USB 方式）
 
 ```powershell

@@ -27,9 +27,9 @@ def main() -> None:
         from ultralytics import YOLO
     except ImportError as e:
         print("未安装 ultralytics。请先创建 yurieye ML 环境并安装依赖：", file=sys.stderr)
-        print("  conda create -n yurieye python=3.10 && conda activate yurieye", file=sys.stderr)
-        print("  pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128", file=sys.stderr)
-        print("  pip install -r ml/requirements.txt", file=sys.stderr)
+        print("  uv venv .venv --python 3.10", file=sys.stderr)
+        print("  uv pip install --python .venv/Scripts/python.exe torch torchvision --index-url https://download.pytorch.org/whl/cu128", file=sys.stderr)
+        print("  uv pip install --python .venv/Scripts/python.exe -r YuriEye/ml/requirements.txt", file=sys.stderr)
         raise SystemExit(1) from e
 
     data_path = Path(args.data)

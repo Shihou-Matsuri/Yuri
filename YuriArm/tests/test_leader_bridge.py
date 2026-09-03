@@ -4,6 +4,7 @@
 运行：python -m unittest discover -s YuriArm/tests -v
 """
 import sys
+import time
 import unittest
 from pathlib import Path
 
@@ -21,6 +22,7 @@ def make_bridge(**kw) -> LeaderBridge:
         joint_limits=DEFAULT_LIMITS,
         max_velocity=60.0,
         deadband=0.5,
+        cmd_name="teleop_joints",
         read_hz=10.0,
         send_hz=10.0,
         estop_tolerance_s=1.0,
@@ -93,8 +95,8 @@ class TestMapAndClip(unittest.TestCase):
 
 class TestDeadband(unittest.TestCase):
     def test_every_step_sends_latest_position(self):
-        """遥操作每帧都发当前绝对位置（不用死区抑制发送，避免大幅后停住）。"""
-        bridge = make_bridge(deadband=2.0)
+        """teleop_joints 直写模式：遥操作每帧都发当前绝对位置（不用死区抑制发送）。"""
+        bridge = make_bridge(deadband=2.0, cmd_name="teleop_joints")
         leader = FakeLeader()
         t = FakeTransport()
         # 首次发
@@ -109,6 +111,15 @@ class TestDeadband(unittest.TestCase):
         leader.action = full_action(shoulder_pan=0.0)
         bridge.step(leader, t)
         self.assertEqual(len(t.sent), 3)
+
+    def test_move_joints_resend_after_periodic_timeout(self):
+        """move_joints 插值模式：小变化先抑制，超兜底周期后仍无条件补发。"""
+        bridge = make_bridge(deadband=2.0, cmd_name="move_joints")
+        leader = FakeLeader()
+        t = FakeTransport()
+        bridge._last_send_t = time.monotonic() - 1.0
+        bridge.step(leader, t)
+        self.assertEqual(len(t.sent), 1)
 
 
 class TestVelocityLimit(unittest.TestCase):
