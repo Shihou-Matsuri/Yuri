@@ -75,6 +75,8 @@ class Transport:
 
 class TcpTransport(Transport):
     def __init__(self, host: str, port: int) -> None:
+        self.host = host
+        self.port = port
         self.sock = socket.create_connection((host, port), timeout=SEND_TIMEOUT_S)
 
     def send(self, data: bytes) -> None:
@@ -85,6 +87,36 @@ class TcpTransport(Transport):
             self.sock.close()
         except OSError:
             pass
+
+    def ping_ok(self, timeout_s: float = 0.5) -> bool:
+        """发 ping 并等响应，检测 TCP 是否静默断开（WiFi 软 AP 会吞包不报错）。
+
+        高频 car_drive 的响应可能堆积，需循环读直到出现 pong 或超时。
+        """
+        try:
+            self.sock.settimeout(timeout_s)
+            self.sock.sendall(b'{"id":254,"cmd":"ping","params":{}}\n')
+            deadline = time.monotonic() + timeout_s
+            while time.monotonic() < deadline:
+                data = self.sock.recv(512)
+                if not data:
+                    break
+                if b'"pong"' in data:
+                    self.sock.settimeout(SEND_TIMEOUT_S)
+                    return True
+            self.sock.settimeout(SEND_TIMEOUT_S)
+            return False
+        except OSError:
+            try:
+                self.sock.settimeout(SEND_TIMEOUT_S)
+            except OSError:
+                pass
+            return False
+
+    def reconnect(self) -> None:
+        """重连（旧 socket 可能半死，直接换新）。"""
+        self.close()
+        self.sock = socket.create_connection((self.host, self.port), timeout=SEND_TIMEOUT_S)
 
 
 class SerialTransport(Transport):
@@ -141,7 +173,18 @@ def main() -> None:
     print(f"[car_remote] 已连接 {link_name}（20Hz 持续下发）")
     print("W/S前后 A/D横移 Z/X旋转 空格停 E急停 Q退出 —— 车体抬空首测！")
     try:
+        last_ping = 0.0
         while True:
+            # 定期 ping 检测 TCP 是否静默断开（软 AP 吞包）；断则自动重连 + resume
+            now_t = time.monotonic()
+            if now_t - last_ping >= 1.0:
+                last_ping = now_t
+                if not transport.ping_ok():
+                    print("[car_remote] 连接断开 -> 自动重连 ...")
+                    transport.reconnect()
+                    transport.send(b'{"cmd":"resume"}\n')
+                    transport.send(b'{"cmd":"car_resume"}\n')
+                    print("[car_remote] 已重连")
             # 非阻塞读键：每 tick 处理一次缓冲，避免积压
             while msvcrt.kbhit():
                 key = msvcrt.getch().decode("ascii", errors="ignore").lower()
