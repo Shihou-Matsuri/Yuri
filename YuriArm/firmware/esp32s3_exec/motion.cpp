@@ -106,13 +106,23 @@ bool MotionController::writeGoalRaw(const int16_t raw[NUM_JOINTS]) {
 
 bool MotionController::moveToNorm(const float targets[NUM_JOINTS], uint32_t durationMs) {
   if (estop_) return false;
-  // 起点 = 最近已知位形（若总线空闲则读一次真实位置）
-  int16_t cur[NUM_JOINTS];
-  if (!readAllPositions(cur)) memcpy(cur, lastRaw_, sizeof(cur));
 
-  for (int i = 0; i < NUM_JOINTS; i++) {
-    from_[i] = cur[i];
-    to_[i] = normToRaw(JOINTS[i], targets[i]);
+  if (interp_) {
+    // 插值中收到新目标（遥操作高频跟随）：不从物理位置重置 from_，
+    // 而是从"当前插值位置"平滑续到新目标，避免 readAllPositions 滞后造成的抽搐。
+    // 当前插值进度 = from_ + delta_*stepsDone_
+    for (int i = 0; i < NUM_JOINTS; i++) {
+      from_[i] = (int16_t)lroundf(from_[i] + delta_[i] * (float)stepsDone_);
+      to_[i] = normToRaw(JOINTS[i], targets[i]);
+    }
+  } else {
+    // 起点 = 最近已知位形（若总线空闲则读一次真实位置）
+    int16_t cur[NUM_JOINTS];
+    if (!readAllPositions(cur)) memcpy(cur, lastRaw_, sizeof(cur));
+    for (int i = 0; i < NUM_JOINTS; i++) {
+      from_[i] = cur[i];
+      to_[i] = normToRaw(JOINTS[i], targets[i]);
+    }
   }
   stepsTotal_ = max(1UL, (uint32_t)lroundf(durationMs * MOVE_STEPS_HZ / 1000.0f));
   stepsDone_ = 0;
