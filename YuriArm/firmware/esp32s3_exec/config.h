@@ -57,7 +57,7 @@ static const JointDef JOINTS[] = {
   {"elbow_flex",    3, NormMode::RANGE_M100_100,  920, 3128, 1800},
   {"wrist_flex",    4, NormMode::RANGE_M100_100,  922, 3154, 1800},
   {"wrist_roll",    5, NormMode::RANGE_M100_100,  193, 3984, 1800},
-  {"gripper",       6, NormMode::RANGE_0_100,    1485, 2913, 1800},
+  {"gripper",       6, NormMode::RANGE_0_100,    2045, 3479, 1800},
 };
 static constexpr int NUM_JOINTS = (int)(sizeof(JOINTS) / sizeof(JOINTS[0]));
 

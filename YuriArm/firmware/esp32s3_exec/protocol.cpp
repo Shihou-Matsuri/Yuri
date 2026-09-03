@@ -5,7 +5,7 @@
 static const char* kCommands[] = {
     "ping", "status", "move_joints", "move_to_pose", "home",
     "open_gripper", "close_gripper", "estop", "resume", "telemetry",
-    "bus_diag", "bus_scan", "bus_raw", "car_scan", "car_status", "car_move",
+    "bus_diag", "bus_scan", "bus_raw", "bus_pos", "bus_goto", "car_scan", "car_status", "car_move",
     "car_home", "car_torque", "car_stop", "car_resume", "car_drive",
 };
 static const int kNumCommands = (int)(sizeof(kCommands) / sizeof(kCommands[0]));
@@ -343,6 +343,30 @@ bool handleCommand(FeetechBus& bus, FeetechBus& bus2, MotionController& motion,
     car.resume();  // 小车恢复响应，但速度不自动恢复——需笔记本重新下发 car_drive
     out["ok"] = true;
     out["result"]["estop"] = false;
+    keepalive = true;
+  } else if (strcmp(cmd, "bus_pos") == 0) {
+    // 读单个舵机的 Present_Position 原始 raw 值（用于重标定 range）
+    int id = params["id"] | -1;
+    int addr = params["addr"] | (int)REG_PRESENT_POSITION;
+    int16_t raw = 0;
+    if (id < 0 || id > 254 || !bus.readWord((uint8_t)id, (uint8_t)addr, raw, 20)) {
+      out["ok"] = false; out["error"] = "bus read failed";
+    } else {
+      out["ok"] = true;
+      out["result"]["id"] = id;
+      out["result"]["addr"] = addr;
+      out["result"]["raw"] = raw;
+    }
+    keepalive = true;
+  } else if (strcmp(cmd, "bus_goto") == 0) {
+    // 直接写单舵机 Goal_Position raw（隔离硬件驱动问题）
+    int id = params["id"] | -1;
+    int raw = params["raw"] | -1;
+    if (id < 0 || id > 254 || raw < 0 || !bus.writeWord((uint8_t)id, REG_GOAL_POSITION, (int16_t)raw, 20)) {
+      out["ok"] = false; out["error"] = "bus write failed";
+    } else {
+      out["ok"] = true; out["result"]["id"] = id; out["result"]["raw"] = raw;
+    }
     keepalive = true;
   } else if (strcmp(cmd, "telemetry") == 0) {
     out["ok"] = true;
