@@ -18,6 +18,10 @@ export const useConsole = defineStore('console', () => {
   const serialPort = ref('COM8')
   const leaderPort = ref('COM7')
   const logFilter = ref('all')
+  // 小车方向操作模式：lock=点按锁定（按一下持续，空格/停停止）｜hold=按住移动、松手停
+  const carMode = ref('lock')
+  try { if (localStorage.getItem('mv-car-mode') === 'hold') carMode.value = 'hold' } catch { /* in-memory */ }
+  function setCarMode(m) { carMode.value = m; try { localStorage.setItem('mv-car-mode', m) } catch { /* in-memory */ } }
 
   async function refresh() {
     try {
@@ -45,6 +49,6 @@ export const useConsole = defineStore('console', () => {
   async function resume() { await post('/api/resume'); await refresh() }
   async function setArmEnabled(on) { await post('/api/arm/enabled', { enabled: on }); await refresh() }
 
-  return { state, logs, linkSel, serialPort, leaderPort, logFilter,
+  return { state, logs, linkSel, serialPort, leaderPort, logFilter, carMode, setCarMode,
     refresh, refreshLogs, connect, disconnect, carPress, carRelease, carEstop, globalEstop, resume, setArmEnabled }
 })
