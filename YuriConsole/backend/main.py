@@ -79,6 +79,19 @@ def car_release() -> JSONResponse:
     return JSONResponse({"ok": True})
 
 
+class VelReq(BaseModel):
+    vx: float = 0.0
+    vy: float = 0.0
+    omega: float = 0.0
+
+
+@app.post("/api/car/vel")
+def car_vel(req: VelReq) -> JSONResponse:
+    """手柄摇杆连续速度（m/s、rad/s），0 即刹停。"""
+    core.car_vel_set(req.vx, req.vy, req.omega)
+    return JSONResponse({"ok": True})
+
+
 @app.post("/api/car/estop")
 def car_estop() -> JSONResponse:
     core.car_estop_cmd()

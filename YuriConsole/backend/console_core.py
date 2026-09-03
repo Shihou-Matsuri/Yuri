@@ -48,7 +48,8 @@ class ConsoleCore:
         self.bridge = None
         self.connected = False
         self.arm_enabled = True
-        self.car_motion = None          # Motion 或 None
+        self.car_motion = None          # Motion 或 None（键盘/按钮离散方向）
+        self.car_vel = None             # (vx, vy, omega) m/s 连续速度（手柄摇杆）
         self.car_estop = False          # 小车 estop 置位（E 后需恢复）
         self.global_estop = False
         self.link_name = "mock"
@@ -201,8 +202,10 @@ class ConsoleCore:
         # 1. 机械臂遥操作（teleop_joints 直写）
         if self.arm_enabled and self.bridge is not None and self.leader is not None:
             self.bridge.step(self.leader, self.transport)
-        # 2. 小车：无目标 = 0 速刹停
-        if self.car_motion is None:
+        # 2. 小车：手柄连续速度 > 离散方向 > 0 速刹停
+        if self.car_vel is not None:
+            speeds = build_speeds(*self.car_vel)
+        elif self.car_motion is None:
             speeds = [0, 0, 0]
         else:
             speeds = build_speeds(*kiwi_drive.MOTION_VECTORS[self.car_motion])
@@ -230,15 +233,27 @@ class ConsoleCore:
                 self.car_estop = False
                 self.log("info", "小车已恢复（car_resume）")
             self.car_motion = motion
+            self.car_vel = None
 
     def car_release(self) -> None:
         with self._lock:
+            self.car_motion = None
+            self.car_vel = None
+
+    def car_vel_set(self, vx: float, vy: float, omega: float) -> None:
+        """手柄摇杆连续速度（m/s、rad/s）。与离散方向互斥。"""
+        with self._lock:
+            if self.car_estop:
+                self._enqueue_cmd(b'{"cmd":"car_resume"}\n')
+                self.car_estop = False
+            self.car_vel = (vx, vy, omega)
             self.car_motion = None
 
     def car_estop_cmd(self) -> None:
         """轮子急停（car_stop），不碰机械臂。"""
         with self._lock:
             self.car_motion = None
+            self.car_vel = None
             self.car_estop = True
             self._enqueue_cmd(b'{"cmd":"car_stop"}\n')
             self.log("warn", "轮子急停（car_stop）")
@@ -285,7 +300,7 @@ class ConsoleCore:
         t = time.time()
         for i, j in enumerate(self._mock_pos):
             self._mock_pos[j] = round(18.0 * (0.5 + 0.5 * __import__("math").sin(t * 0.6 + i)), 1)
-        self._mock_v = 0.0 if self.car_motion is None else 120.0
+        self._mock_v = 0.0 if (self.car_motion is None and self.car_vel is None) else 120.0
 
     def state(self) -> dict:
         """前端轮询的聚合状态。"""
@@ -298,6 +313,7 @@ class ConsoleCore:
                 "leader_port": self.leader_port,
                 "arm_enabled": self.arm_enabled,
                 "car_motion": motion,
+                "car_vel": self.car_vel,
                 "car_estop": self.car_estop,
                 "global_estop": self.global_estop,
                 "positions": dict(self._mock_pos) if self.mock else {},

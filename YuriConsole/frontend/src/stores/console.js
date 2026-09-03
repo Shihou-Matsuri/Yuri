@@ -11,7 +11,7 @@ async function post(path, body) {
 export const useConsole = defineStore('console', () => {
   const state = ref({
     connected: false, link: '', mock: false, leader_port: 'COM7', arm_enabled: true,
-    car_motion: null, car_estop: false, global_estop: false, positions: {}, wheel_speed: null,
+    car_motion: null, car_vel: null, car_estop: false, global_estop: false, positions: {}, wheel_speed: null,
     wired: { connected: false, port: 'COM21', motion: null, torque_on: false, error: null },
   })
   const logs = ref([])
@@ -46,6 +46,7 @@ export const useConsole = defineStore('console', () => {
   async function disconnect() { await post('/api/disconnect'); await refresh() }
   async function carPress(key) { await post('/api/car/press', { key }) }
   async function carRelease() { await post('/api/car/release') }
+  async function carVel(vx, vy, omega) { await post('/api/car/vel', { vx, vy, omega }) }
   async function carEstop() { await post('/api/car/estop'); await refresh() }
   async function globalEstop() { await post('/api/global/estop'); await refresh() }
   async function resume() { await post('/api/resume'); await refresh() }
@@ -58,6 +59,6 @@ export const useConsole = defineStore('console', () => {
   async function wiredEstop() { await post('/api/wired/estop'); await refresh() }
 
   return { state, logs, linkSel, serialPort, leaderPort, logFilter, carMode, setCarMode, wiredPort,
-    refresh, refreshLogs, connect, disconnect, carPress, carRelease, carEstop, globalEstop, resume, setArmEnabled,
+    refresh, refreshLogs, connect, disconnect, carPress, carRelease, carVel, carEstop, globalEstop, resume, setArmEnabled,
     wiredConnect, wiredDisconnect, wiredPress, wiredRelease, wiredEstop }
 })
