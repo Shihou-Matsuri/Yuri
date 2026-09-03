@@ -131,6 +131,20 @@ YuriArm/firmware/protocol.md
 注意：`YuriArm` 不修改 lerobot 源码；只在真机路径惰性导入
 `SO101Follower`，主动臂侧也应采用同样的惰性导入方式。
 
+### 4.1 合作者已提交的参考实现
+
+合作者已上传 `LeKiwiTeleop/teleop_so101.py`（提交 `bb8021258`），可以作为
+“主动臂读角度 -> 从动臂写角度”的参考。但当前版本：
+
+- 使用老版 LeRobot 接口 `lerobot.teleoperators.so_leader` /
+  `lerobot.robots.so_follower`，与本仓库当前 API
+  `so101_leader` / `so101_follower` **不一致**；
+- 只支持主动臂和从动臂都直连电脑的**有线遥操作**，没有经过 ESP32；
+- 没有安全限位、死区、速度限幅和与小车互斥逻辑。
+
+因此该文件应定位为 “leader 读取参考”，不能直接作为本任务的最终实现。
+本任务最终应把 follower 端替换为 ESP32 `move_joints` 传输。
+
 ## 5. 验收标准
 
 1. 主动臂接电脑后，`get_action()` 能以 `≥30 Hz` 读取且无异常退出。
@@ -160,4 +174,3 @@ YuriArm/firmware/protocol.md
 4. `leader_remote.py`：命令行启动入口
 5. `test_leader_bridge.py`：Mock leader + Mock transport 测试
 6. 更新根仓库 `docs/` 和 README，标记该功能完成/待联调
-
