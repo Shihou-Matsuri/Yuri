@@ -95,6 +95,10 @@ class LeaderBridge:
         self._estop = False
         self._last_read_ok = 0.0
         self._last_move_target: dict[str, float] | None = None
+        # 死区门控：目标变化超 deadband 才发 move_joints；另每 _resend_period_s 兜底补发一次
+        # （防 leader 停住但从动臂未到位时不再补发而停半路）。
+        self._resend_period_s = 0.5
+        self._last_send_t = 0.0
 
     # ------------------------------------------------------------------ 安全
     @property
@@ -182,14 +186,31 @@ class LeaderBridge:
         if self._apply_speed_limit:
             mapped = self._limit_velocity(mapped)
 
-        # 4. 每帧无条件发送当前 leader 位置（限位后）。
-        #    不用死区门槛抑制"变化小就不发"——那会导致大幅动作后 leader 停住、
-        #    从动臂还在追赶但 delta 变化小于死区时不再补发而"停在半路"。
-        #    防静止抖动靠 move_joints 目标=当前位置时固件不产生实际运动实现。
+        # 4. 死区门控发送：目标变化超死区才发 move_joints。
+        #    不能每帧无条件发——固件 moveToNorm 在插值中收到新目标会重置 from_ 重新插值，
+        #    若 leader 读数带微抖(±0.5°)导致每帧目标微变，插值永远被打断重来，
+        #    大幅/多舵机运动会卡死（舵机每帧只走一小步就被重新规划）。
+        #    静止抖动由此抑制；大幅动作目标变化大，正常触发发送。
+        # 5. 兜底补发：leader 停住后若从动臂尚未到位（此前某帧漏发/被打断），
+        #    每 _resend_period_s 无条件补发一次当前目标，保证最终到位（防"停半路"）。
         self._last_move_target = dict(mapped)
+        changed = self._targets_changed(mapped)
+        now = time.monotonic()
+        if changed or (now - self._last_send_t >= self._resend_period_s):
+            self._last_send_t = now
+            self._send_move_joints(transport, mapped)
         self._last_target = dict(mapped)
-        self._send_move_joints(transport, mapped)
         return mapped
+
+    def _targets_changed(self, new: dict[str, float]) -> bool:
+        """任一关节相对上次发送目标变化超过死区即视为需要发送。"""
+        if self._last_target is None:
+            return True
+        for m, v in new.items():
+            prev = self._last_target.get(m)
+            if prev is None or abs(v - prev) >= self._deadband:
+                return True
+        return False
 
     # ------------------------------------------------------------------ 发送
     def _send_move_joints(self, transport: TransportLike, targets: dict[str, float]) -> None:
