@@ -48,7 +48,7 @@
 
 ```powershell
 cd YuriArm
-C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe tools\leader_remote.py --link serial --serial COM8
+..\lerobot_venv312\Scripts\python.exe tools\leader_remote.py --link serial --serial COM8
 ```
 
 - 前置：主动臂 COM7、ESP32 COM8、从动臂供电；小车不得同时运行。
@@ -59,7 +59,7 @@ C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe tools\leader_remo
 
 ```powershell
 cd YuriChassis
-C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe car_remote.py
+..\lerobot_venv312\Scripts\python.exe car_remote.py
 ```
 
 W/S 前后 · A/D 横移 · Z/X 旋转 · 空格停 · E 急停 · Q 退出（车体抬空首测）。
@@ -68,7 +68,7 @@ W/S 前后 · A/D 横移 · Z/X 旋转 · 空格停 · E 急停 · Q 退出（�
 
 ```powershell
 cd YuriChassis
-C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe dual_remote.py
+..\lerobot_venv312\Scripts\python.exe dual_remote.py
 ```
 
 - 前置：主动臂 COM7 + ESP32（默认 WiFi TCP，或 `--serial COM8`）；从动臂 + 小车供电；车体抬空首测。
@@ -80,7 +80,7 @@ C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe dual_remote.py
 
 ```powershell
 cd YuriConsole
-C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe backend\main.py --mock
+..\lerobot_venv312\Scripts\python.exe backend\main.py --mock
 ```
 
 浏览器打开 `http://127.0.0.1:8766`（mock 离线演示；去 `--mock` 为真机模式）。详见 `YuriConsole/README.md`。

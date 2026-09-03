@@ -4,7 +4,7 @@ REM  LeKiwi SO-101 主动臂带动从动臂 - 遥操作启动脚本
 REM  Windows 批处理。主动臂(COM7) 带动 从动臂(COM4)。
 REM  轮子用独立代码控制，不在此脚本内。
 REM ============================================================
-cd /d C:\Users\21209\lerobot
+REM venv 内 lerobot 为 editable 安装，CLI 任意目录可用，无需 cd 源码
 
 echo.
 echo [1/2] 启动遥操作: 主动臂(COM7) 带动 从动臂(COM4)
@@ -12,7 +12,7 @@ echo       握着主动臂动, 从动臂会跟着动
 echo       按 Ctrl+C 停止
 echo.
 
-C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\lerobot-teleoperate.exe ^
+%~dp0..\lerobot_venv312\Scripts\lerobot-teleoperate.exe ^
   --robot.type=so101_follower ^
   --robot.port=COM4 ^
   --teleop.type=so101_leader ^

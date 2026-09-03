@@ -23,8 +23,8 @@ YuriConsole/
 ### 生产（前端已 build）
 
 ```bat
-cd C:\Users\21209\Desktop\Yuri\YuriConsole
-C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe backend\main.py --mock
+cd YuriConsole
+..\lerobot_venv312\Scripts\python.exe backend\main.py --mock
 :: 自动开浏览器 http://127.0.0.1:8766 ；去 --mock 为真机模式
 :: pywebview 桌面壳：加 --webview
 ```
@@ -33,7 +33,7 @@ C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe backend\main.py -
 
 ```bat
 :: 终端1：后端（mock）
-C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe backend\main.py --mock --port 8766
+..\lerobot_venv312\Scripts\python.exe backend\main.py --mock --port 8766
 :: 终端2：前端 vite dev（/api 代理到 8766）
 cd frontend && npm run dev
 ```
