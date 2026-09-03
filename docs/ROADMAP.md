@@ -14,7 +14,7 @@
 | V1 | YuriEye 感知接入 YuriArm（手眼标定 + 目标检测 → 抓取） | ⏳ |
 | G1 | 机械臂 + 轮子 + 摄像头协同（自主拾取已放） | 🔜 |
 | U1 | 综合遥控台：需求 + GUI 风格定稿（MatsuriVoice 风格） | ✅（`docs/REMOTE_CONSOLE_REQ.md`） |
-| U2 | 综合遥控台实现：连接/状态/单控/视觉/标定 5 区 | 🔜（`YuriConsole/` MVP，mock 可用） |
+| U2 | 综合遥控台实现：A–F 六区 + 双主题 + 手柄 + 单 exe（`YuriConsole/`） | 🔜（功能完成，真机全功能回归待做） |
 
 ## 说明
 

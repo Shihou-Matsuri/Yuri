@@ -28,7 +28,7 @@
 | **机械臂 + 小车同时控制（dual_remote）** | ✅ 真机验证：臂跟手 + 轮键盘同跑；空格停 / E 轮子急停 / Q 刹停退出 |
 | BLE 通道 | 🔇 已禁用（用户决策：只留 WiFi） |
 | YuriEye 视觉识别 | 🔜 待与机械臂集成 |
-| 综合遥控台 GUI（YuriConsole） | 🟡 U2 MVP：A–E 五区 + 双主题，mock 可用；真机/D 视觉/打包待续 |
+| 综合遥控台 GUI（YuriConsole） | 🟡 U2 功能完成：A–F 六区（F=CameraCar 独立页签）+ 花信/祭主题 + 手柄（含控臂三轴）+ 单 exe；mock 可用，真机全功能回归待做 |
 
 ## 架构
 
@@ -105,6 +105,8 @@ $HOME/.arduino-cli/arduino-cli.exe upload -p COM8 --fqbn esp32:esp32:esp32s3:CDC
 
 ## 相关文档
 
+- `docs/HANDOVER_TO_CODEX.md`：交接现状（先读）
+- `docs/NEXT_SESSION_PROMPT.md`：给下一个 Codex 会话的启动提示词
 - `SOUL.md`：设计灵魂与教训（先读）
 - `YuriArm/docs/方案设计.md`：YuriArm 设计
 - `YuriArm/firmware/protocol.md`：ESP32 JSON 协议（含 teleop_joints）
