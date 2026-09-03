@@ -145,7 +145,136 @@ YuriArm/firmware/protocol.md
 因此该文件应定位为 “leader 读取参考”，不能直接作为本任务的最终实现。
 本任务最终应把 follower 端替换为 ESP32 `move_joints` 传输。
 
-## 5. 验收标准
+### 4.2 合作者代码审阅结论
+
+`LeKiwiTeleop/teleop_so101.py` 的逻辑不算复杂，核心循环只有三步：
+
+```python
+action = leader.get_action()          # 读主动臂角度
+follower.send_action(action)          # 写从动臂
+time.sleep(1.0 / FPS)                 # 30Hz 限速
+```
+
+优点：
+
+- 结构小，适合作为 leader 读取的起点；
+- 使用了 `get_action()`，和本仓库 `SO101Leader` 的核心接口一致；
+- `finally` 会断开两条总线，避免异常后串口长期被占用。
+
+需要修正的问题：
+
+1. **API 版本错误**：导入 `so_leader` / `so_follower`，本仓库是
+   `so101_leader` / `so101_follower`；直接跑会 `ModuleNotFoundError`。
+2. **未实现远程**：从动臂仍走 `SOFollower` 本地总线，没有经过 ESP32。
+3. **单位未统一**：脚本默认 `USE_DEGREES=True`；YuriArm 默认归一化
+   `-100..100`，需要改成 `False` 或在 PC 侧换算。
+4. **缺少安全层**：没有关节限位、速度限幅、死区、延迟监控和主动臂断线急停。
+5. **没有互斥机制**：未处理“从动臂运动期间小车不能动”的总线/任务约束。
+6. **没有可测试接口**：直接把 `SOLeader`/`SOFollower` 实例焊死在循环里，
+   无法离线验证映射和安全逻辑。
+
+## 5. 分阶段实现建议
+
+建议按下面四步推进，每一步都有可验证产物：
+
+### 5.1 Step 1：修正 API 并跑通读取（无运动）
+
+先把 import 和单位改成当前仓库接口：
+
+```python
+from lerobot.teleoperators.so101_leader import SO101Leader, SO101LeaderConfig
+from lerobot.robots.so101_follower import SO101Follower, SO101FollowerConfig
+
+leader = SO101Leader(
+    SO101LeaderConfig(port=LEADER_PORT, use_degrees=False)
+)
+```
+
+读取结果：
+
+```python
+action = leader.get_action()
+targets = {
+    name.removeprefix(".pos"): value
+    for name, value in action.items()
+    if name.endswith(".pos")
+}
+```
+
+验收：控制台能打印 6 个关节名和 -100..100 数值，且主动臂没有力矩。
+
+### 5.2 Step 2：加入映射、限位和死区
+
+新增 `leader_bridge.py`：
+
+```python
+class LeaderBridge:
+    def map_action(self, action: dict[str, float]) -> dict[str, float]:
+        ...
+
+    def should_send(self, targets: dict[str, float]) -> bool:
+        # 死区：只有变化超过 tolerance 才向 ESP32 发新目标
+        ...
+```
+
+强制要求：
+
+- 关节名使用 `YuriArm.yuriarm.config.JOINT_NAMES`
+- 每个目标 clamp 到 `safety.joint_limits`
+- `max_velocity` 限制相邻帧变化量
+- gripper 单独 deadband；第一次上机先确认开/合方向
+
+### 5.3 Step 3：接 ESP32 传输
+
+推荐先做 WiFi TCP，再补 BLE：
+
+```python
+class Esp32Transport:
+    def send(self, cmd: dict) -> None:
+        ...
+```
+
+- WiFi：`socket.create_connection(("192.168.4.1", 8765))`
+- BLE：复用 `YuriChassis/car_remote_ble.py` 的 `BleakClient` 写法
+- USB：COM20 / 115200，复用 `YuriArm/tools/esp32_smoke.py`
+
+发送命令：
+
+```python
+{
+  "id": next_id,
+  "cmd": "move_joints",
+  "params": {
+    "targets": targets,
+    "duration": 1.0 / SEND_HZ,
+  }
+}
+```
+
+每帧即使目标不变，也必须至少发送 `heartbeat`，确保 ESP32 看门狗不触发。
+
+### 5.4 Step 4：加入急停、互斥和测试
+
+安全要求：
+
+- Ctrl+C、主动臂断连、传输异常 -> 立即发送 `estop`
+- ESP32 返回 `estop` 后，必须先 `resume` 才能继续
+- 小车/从动臂互斥：建议增加全局状态锁或运行前检查，禁止 `car_drive` 和
+  `move_joints` 同时执行
+- `dashboard` 或日志输出 leader/follower/mapped/estop 五类状态，便于联调
+
+测试建议：
+
+```text
+YuriArm/tests/test_leader_bridge.py
+```
+
+- FakeLeader：固定返回合法 6 关节 dict
+- FakeEsp32Transport：记录命令和调用次数
+- 测试死区、限位、速度限幅、estop、断线后的 stop 行为
+- 至少提供一个 `--mock` 后端，无主动臂/从动臂也能验证主循环
+
+## 6. 验收标准
 
 1. 主动臂接电脑后，`get_action()` 能以 `≥30 Hz` 读取且无异常退出。
 2. 从动臂能跟随主动臂动作，延迟 `≤100 ms`（本机 WiFi/BLE）。
@@ -155,7 +284,7 @@ YuriArm/firmware/protocol.md
 6. `--mock` 模式可在无硬件下跑通完整循环。
 7. 联调日志中能清楚看到：leader pos -> mapped targets -> ESP32 OK。
 
-## 6. 硬性约束
+## 7. 硬性约束
 
 - 不修改 lerobot 上游源码，只通过公共接口 `SO101Leader` / `SO101Follower` 工作。
 - 禁止硬编码端口和关节表；端口放到 `configs/leader.json`，关节表复用 `config.py`。
@@ -166,7 +295,7 @@ YuriArm/firmware/protocol.md
   - `YuriArm` 固件：`protocol.cpp / esp32s3_exec.ino`
   - `YuriChassis`：小车遥控与急停
 
-## 7. 建议交付物
+## 8. 建议交付物
 
 1. `leader_bridge.py`：主动臂读取、映射、安全、状态管理
 2. `esp32_transport.py`：WiFi/BLE/USB 统一传输接口
