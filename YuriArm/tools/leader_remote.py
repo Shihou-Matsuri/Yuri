@@ -171,6 +171,21 @@ def main() -> int:
         print(f"[leader_remote] 连接主动臂 {leader_port} ...")
         connect(calibrate=False)  # 用已有标定，不触发交互校准
 
+    # 预检串口占用：避免多进程抢同一串口导致看门狗误触发/连接断。
+    if link == "serial" and not args.mock:
+        try:
+            import serial as _ser
+            _probe = _ser.Serial(args.serial, 115200, timeout=0.2)
+            _probe.close()
+            print(f"[leader_remote] 串口 {args.serial} 可访问")
+        except Exception as _pe:  # noqa: BLE001
+            print(
+                f"[leader_remote] 串口 {args.serial} 被占用({_pe})。\n"
+                "  可能已有另一个 leader_remote/脚本在运行。请先关闭旧进程再启动，"
+                "否则会互相抢串口导致从动臂间歇停住。"
+            )
+            return 2
+
     try:
         if args.mock:
             transport = _MemoryTransport()

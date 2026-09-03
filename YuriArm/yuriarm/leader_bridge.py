@@ -240,6 +240,9 @@ class LeaderBridge:
         self._send_resume(transport)  # 清残留 estop
         send_period = 1.0 / self._send_hz
         next_cycle = time.monotonic()
+        # 周期性自愈：若 ESP32 因偶发 watchdog/负载进入 estop，桥自动 resume，避免从动臂停住需手动恢复。
+        auto_recover_period_s = 2.0
+        last_auto_recover = time.monotonic()
         while not self._estop:
             if stop_event is not None and stop_event.is_set():
                 break
@@ -250,6 +253,20 @@ class LeaderBridge:
 
             # 喂看门狗（每次 step 后都发，保证从动臂静止也不被刹停）
             self._send_heartbeat(transport)
+
+            # 周期性自检 + 自动 resume（仅当 ESP32 进入 estop）
+            if time.monotonic() - last_auto_recover >= auto_recover_period_s:
+                last_auto_recover = time.monotonic()
+                try:
+                    transport.send({"cmd": "status", "params": {}})
+                    resp = transport.recv(0.15)
+                    if resp and not resp.get("ok"):
+                        pass
+                    elif resp and resp.get("result", {}).get("estop") is True:
+                        logger.warning("检测到 ESP32 estop -> 自动 resume")
+                        self._send_resume(transport)
+                except Exception as _re:  # noqa: BLE001
+                    logger.debug("自检 resume 失败: %s", _re)
 
             # 主动臂断连检测：超时未读到有效值 -> 急停
             if self._last_read_ok and (time.monotonic() - self._last_read_ok) > self._estop_tolerance_s:
