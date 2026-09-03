@@ -125,8 +125,10 @@ def main() -> None:
     )
     link_name = f"串口 {args.serial}" if args.serial else f"TCP {args.host}:{args.port}"
 
-    # 清掉可能的 estop 残留（上次 car_stop/看门狗触发后需 resume 才能恢复控制）
+    # 清掉可能的 estop 残留：全局 resume 清从动臂；car_resume 清小车的。
+    # （若小车之前 car_stop/E 急停过，小车处于 estop，不 car_resume 则 car_drive 被拒，轮子不动）
     transport.send(b'{"cmd":"resume"}\n')
+    transport.send(b'{"cmd":"car_resume"}\n')
 
     import msvcrt
 
@@ -134,6 +136,7 @@ def main() -> None:
     motion = None
     stop_reason = RemoteStop.QUIT
     last_tick = 0.0
+    car_estop_active = False   # E 急停后需 car_resume 才能恢复
 
     print(f"[car_remote] 已连接 {link_name}（20Hz 持续下发）")
     print("W/S前后 A/D横移 Z/X旋转 空格停 E急停 Q退出 —— 车体抬空首测！")
@@ -151,11 +154,17 @@ def main() -> None:
                     return
                 if key == "e":
                     motion = None
+                    car_estop_active = True
                     print("[car_remote] E -> 急停")
                     send_car_stop(transport)
                     continue
                 new_motion = kiwi_drive.KEY_MOTIONS.get(key)
                 if new_motion is not None:
+                    # 若 E 急停过，先 car_resume 清小车 estop，否则 car_drive 被拒
+                    if car_estop_active:
+                        transport.send(b'{"cmd":"car_resume"}\n')
+                        car_estop_active = False
+                        print("[car_remote] 已恢复(resume)")
                     motion = new_motion
                     print(f"[car_remote] {motion.value}")
 
