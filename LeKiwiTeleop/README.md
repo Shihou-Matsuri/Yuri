@@ -71,6 +71,11 @@ C:\Users\21209\lerobot_venv312\Scripts\lerobot-calibrate.exe --teleop.type=so101
 ```bat
 C:\Users\21209\lerobot_venv312\Scripts\lerobot-teleoperate.exe --robot.type=so101_follower --robot.port=COM4 --teleop.type=so101_leader --teleop.port=COM7
 ```
+方式C：直接跑本项目源码（封装了官方 API，不再经 CLI）
+```bat
+C:\Users\21209\lerobot_venv312\Scripts\python.exe teleop_so101.py
+```
+> 源码里改 `LEADER_PORT` / `FOLLOWER_PORT` / `FPS` 三个常量即可。
 
 运行后握主动臂动 → 从动臂跟着动。停止按 Ctrl+C。
 
@@ -78,7 +83,8 @@ C:\Users\21209\lerobot_venv312\Scripts\lerobot-teleoperate.exe --robot.type=so10
 
 | 文件 | 用途 |
 |---|---|
-| `teleop_so101_start.bat` | 一键启动遥操作（需改端口为实际值） |
+| `teleop_so101.py` | **遥操作源码**：自研封装 lerobot Python API，主动臂读角度→从动臂写角度 |
+| `teleop_so101_start.bat` | 一键启动（调用官方 CLI，需改端口为实际值） |
 | `SO101_遥操作操作说明.md` | 完整操作与排障文档 |
 
 ## 端口参数速查
