@@ -13,6 +13,7 @@
 | `YuriChassis/` | 三轮 kiwi 底盘：运动学 + WiFi 键盘遥控（`car_remote.py` / `dual_remote.py` 臂+轮同控） |
 | `YuriEye/` | 彩色立方体识别（YOLOv8 + 相机标定），感知层 |
 | `docs/REMOTE_CONSOLE_REQ.md` | 综合遥控台需求与 MatsuriVoice GUI 风格规范（U1 定稿，U2 待实现） |
+| `docs/gui-reference/` | MatsuriVoice 风格参考：双主题源码 + 页面样板 + 移植说明 |
 | `LeKiwiTeleop/` | LeKiwi 有线主从遥操作参考（独立文档，非本架构） |
 | `SOUL.md` | **设计灵魂与教训，先读** |
 

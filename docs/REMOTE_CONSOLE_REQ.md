@@ -2,6 +2,7 @@
 
 > 状态：**需求与风格定稿（U1，2026-09-04）** · 实现状态：⏳ 待做（U2）
 > 风格母版：MatsuriVoice `frontend/src/theme.ts` + `style.css`（浅色「花信」/ 深色「祭」双主题）
+> 参考文件：`docs/gui-reference/`（主题源码 + 页面样板 + 移植说明）
 
 ## 1. 背景
 
@@ -123,3 +124,8 @@ Yuri 目前由多个终端入口分散控制：`leader_remote.py`（臂遥操作
 - [ ] 日志筛选与最近 500 条记录可用；
 - [ ] 新增文档同步更新 `README.md`、`ROADMAP.md`、`docs/HANDOVER_TO_CODEX.md`。
 
+## 7. 参考与同步
+
+- 风格令牌与组件写法：`docs/gui-reference/`（从 MatsuriVoice v0.8.5 摘录，见参考目录 README）。
+- 需求变更时同步更新本文档与 `README.md` / `ROADMAP.md` / `HANDOVER_TO_CODEX.md`；
+- 母版升级后如需吸收新风格，先核对 `theme.reference.ts` 与母版 `theme.ts` 的差异再整体替换。

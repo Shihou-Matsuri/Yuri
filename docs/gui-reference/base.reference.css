@@ -1,0 +1,78 @@
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--mv-bg, #f5f6f8);
+  color: var(--mv-text, #2a2a38);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+#app {
+  background: var(--mv-bg, #f5f6f8);
+  transition: background-color 0.25s ease;
+}
+
+::selection {
+  background: var(--mv-primary-soft, rgba(124, 111, 232, 0.2));
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--mv-border, #e8e8f0);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 页面切换过渡 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 通用微交互 */
+.mv-card-hover {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.mv-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mv-shadow, 0 4px 16px rgba(42, 42, 56, 0.06));
+}
+
+/* 设置页通用表格 */
+.mv-settings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 12px;
+}
+.mv-settings-table th {
+  text-align: left;
+  color: var(--mv-text-2);
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--mv-border);
+}
+.mv-settings-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--mv-border);
+}
+.mv-settings-table tbody tr:hover {
+  background: var(--mv-hover);
+}
