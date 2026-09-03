@@ -54,8 +54,8 @@ GND ───────────────────────► UAR
 可选的小车总线（UART2）接法：
 
 ```
-ESP32 GPIO15 (UART2_TX) ──► Waveshare Adapter UART TX
-ESP32 GPIO14 (UART2_RX) ──► Waveshare Adapter UART RX
+ESP32 GPIO11 (UART2_TX) ──► Waveshare Adapter UART TX
+ESP32 GPIO12 (UART2_RX) ──► Waveshare Adapter UART RX
 ESP32 GND ───────────────► Adapter UART GND
 GPIO13 不接（Waveshare UART 模式无需方向脚）
 ```
