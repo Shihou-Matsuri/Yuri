@@ -82,6 +82,7 @@ C:\Users\21209\Desktop\Yuri\lerobot_venv312\Scripts\python.exe dual_remote.py   
 ## 7. 后续方向（未定优先级）
 
 - ✅ dual_remote 实测已通过（2026-09-04，修复后已提交）
+- 📐 综合遥控台需求与 GUI 风格已定稿（`docs/REMOTE_CONSOLE_REQ.md`，U1；U2 实现待排期）
 - YuriEye 视觉识别与机械臂集成（抓取闭环，另一台电脑做过，本机未接）
 - 底盘落地实测（当前只抬空验证方向）
 - 可选：dual_remote 加单实例锁防多开

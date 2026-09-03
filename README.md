@@ -12,6 +12,7 @@
 | `YuriArm/` | SO-101 机械臂：ESP32-S3 固件（`firmware/esp32s3_exec/`）+ 遥操作桥（`yuriarm/`+`tools/leader_remote.py`） |
 | `YuriChassis/` | 三轮 kiwi 底盘：运动学 + WiFi 键盘遥控（`car_remote.py` / `dual_remote.py` 臂+轮同控） |
 | `YuriEye/` | 彩色立方体识别（YOLOv8 + 相机标定），感知层 |
+| `docs/REMOTE_CONSOLE_REQ.md` | 综合遥控台需求与 MatsuriVoice GUI 风格规范（U1 定稿，U2 待实现） |
 | `LeKiwiTeleop/` | LeKiwi 有线主从遥操作参考（独立文档，非本架构） |
 | `SOUL.md` | **设计灵魂与教训，先读** |
 
@@ -25,6 +26,7 @@
 | **机械臂 + 小车同时控制（dual_remote）** | ✅ 真机验证：臂跟手 + 轮键盘同跑；空格停 / E 轮子急停 / Q 刹停退出 |
 | BLE 通道 | 🔇 已禁用（用户决策：只留 WiFi） |
 | YuriEye 视觉识别 | 🔜 待与机械臂集成 |
+| 综合遥控台 GUI | ⏳ U1 文档已定稿，U2 待实现（见 `docs/REMOTE_CONSOLE_REQ.md`） |
 
 ## 架构
 
