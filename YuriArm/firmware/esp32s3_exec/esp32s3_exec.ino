@@ -24,6 +24,7 @@ static uint32_t lastTickMs = 0;
 static uint32_t lastLoadCheckMs = 0;
 static bool watchdogTripped = false;
 static bool carWatchdogTripped = false;
+static bool suppressCarDriveResponse = false;  // car_drive 执行后抑制回包（防高频响应堆积）
 #define MAX_LINES_PER_CYCLE 16  // 每轮 handleStream 最多处理条数（防积压饿死 heartbeat/tick）
 
 // ---- BLE 指令通道 ----
@@ -99,17 +100,30 @@ void tickMotion() {
 // 任何有效指令都喂狗。
 bool processCommandLine(const String& line, String& resp, bool& respond) {
   respond = true;
-  if (line.indexOf("heartbeat") >= 0) {
-    // 心跳/保活：只喂狗，不回包（避免高频心跳的 pong 流量拥塞 BLE 链路）
+  if (line.indexOf("heartbeat") >= 0 || line.indexOf("car_drive") >= 0) {
+    // 心跳/保活 + car_drive（20Hz 持续速度下发）：只喂狗，不回包。
+    // car_drive 若回包，20Hz 响应会堆积在 TCP/USB 上淹没其它响应（如 ping pong），
+    // 导致客户端误判断连频繁重连。
     motion.feedWatchdog();
     car.feedWatchdog();
     watchdogTripped = false;
     carWatchdogTripped = false;
-    respond = false;
-    return true;
+    // car_drive 仍需真正执行——不能在这里直接 return true 跳过处理！
+    // 因此这里只处理 heartbeat；car_drive 走下方 handleCommand 但抑制回包。
+    if (line.indexOf("heartbeat") >= 0) {
+      respond = false;
+      return true;
+    }
+    // car_drive: 落入 handleCommand 执行，但 suppressResponse 置位
+    suppressCarDriveResponse = true;
   }
   bool keepalive = false;
   bool ok = handleCommand(bus1, bus2, motion, car, line.c_str(), line.length(), resp, keepalive);
+  if (suppressCarDriveResponse) {
+    suppressCarDriveResponse = false;
+    respond = false;  // car_drive 执行了但不回包
+    return ok;
+  }
   if (ok) {
     motion.feedWatchdog();
     car.feedWatchdog();
