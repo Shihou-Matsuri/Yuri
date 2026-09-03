@@ -52,6 +52,9 @@ class SerialTransport:
     def __init__(self, port: str, baud: int = 115200):
         import serial
         self.ser = serial.Serial(port, baud, timeout=0.5, write_timeout=3.0)
+        # Let the board finish booting after an open/auto-reset before the first
+        # command; otherwise the immediately-following ping can time out.
+        time.sleep(1.0)
         self._lock = threading.Lock()
 
     def send_raw(self, data: bytes) -> None:
