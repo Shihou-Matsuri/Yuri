@@ -61,20 +61,29 @@ class LeaderBridge:
         deadband: float = 0.5,
         read_hz: float = 30.0,
         send_hz: float = 20.0,
+        move_duration_s: float = 0.3,
         estop_tolerance_s: float = 1.0,
+        apply_speed_limit: bool = True,
     ):
         """
         joint_limits: 各关节允许范围 (min,max)，归一化单位。
         max_velocity: 相邻发送帧关节变化量上限（归一化单位/帧）。
         deadband:     死区——关节位置变化小于此值不触发新发送（抑制抖动）。
         read_hz:      主动臂读取频率。
-        send_hz:      ESP32 发送频率（≥2Hz 喂看门狗）。
+        send_hz:      ESP32 move_joints 发送频率（须 <500ms 喂看门狗；不要太高，
+                      否则每次 move_joints 重置固件插值反而不动）。
+        move_duration_s: 每条 move_joints 的 duration（固件插值时长）。给足时间让
+                      固件平滑插值到目标，远大于 1/send_hz 的一个小步。
         estop_tolerance_s: 主动臂多久没读到有效值即判定断连 -> 急停。
+        apply_speed_limit: 是否启用速度限制。遥操作实时跟随建议关掉
+            （否则大幅快动时从动臂被限速拖累、看起来跟不上/停住）。
         """
         # 校验关节表完整
         missing = set(JOINT_NAMES) - set(joint_limits)
         if missing:
             raise ValueError(f"joint_limits 缺少关节: {sorted(missing)}")
+        self._apply_speed_limit = apply_speed_limit
+        self._move_duration_s = move_duration_s
         self._joint_limits = joint_limits
         self._max_velocity = max_velocity
         self._deadband = deadband
@@ -85,6 +94,7 @@ class LeaderBridge:
         self._last_target: dict[str, float] | None = None
         self._estop = False
         self._last_read_ok = 0.0
+        self._last_move_target: dict[str, float] | None = None
 
     # ------------------------------------------------------------------ 安全
     @property
@@ -139,7 +149,11 @@ class LeaderBridge:
         leader: LeaderLike,
         transport: TransportLike,
     ) -> dict[str, float] | None:
-        """单步：读主动臂 -> 映射/安全 -> 需要时发送。返回本轮发送的目标或 None。"""
+        """单步：读主动臂 -> 映射/安全/死区；目标变化超死区才发 move_joints。
+
+        喂看门狗由 run() 每周期发 heartbeat 承担（本方法不无条件发 move_joints，
+        避免"目标不变也刷 move_joints"在固件插值结束后不再喂狗的问题）。
+        """
         if self._estop:
             return None
 
@@ -164,22 +178,24 @@ class LeaderBridge:
         # 2. 归一化 + 限位
         mapped = self._map_and_clip(raw_action)
 
-        # 3. 限速
-        mapped = self._limit_velocity(mapped)
+        # 3. 限速（可选：仅当 apply_speed_limit 时启用；实时遥操作用来防突跳）
+        if self._apply_speed_limit:
+            mapped = self._limit_velocity(mapped)
 
-        # 4. 死区（决定是否值得发）
-        to_send = self._apply_deadband(mapped)
-        self._last_target = mapped  # 用最新映射更新，不发也记录位置
-
-        # 5. 发送（即使目标没变，心跳靠调用方按 send_hz 持续调 step）
-        self._send_move_joints(transport, to_send)
-        return to_send
+        # 4. 每帧无条件发送当前 leader 位置（限位后）。
+        #    不用死区门槛抑制"变化小就不发"——那会导致大幅动作后 leader 停住、
+        #    从动臂还在追赶但 delta 变化小于死区时不再补发而"停在半路"。
+        #    防静止抖动靠 move_joints 目标=当前位置时固件不产生实际运动实现。
+        self._last_move_target = dict(mapped)
+        self._last_target = dict(mapped)
+        self._send_move_joints(transport, mapped)
+        return mapped
 
     # ------------------------------------------------------------------ 发送
     def _send_move_joints(self, transport: TransportLike, targets: dict[str, float]) -> None:
         cmd = {
             "cmd": "move_joints",
-            "params": {"targets": targets, "duration": 1.0 / self._send_hz},
+            "params": {"targets": targets, "duration": self._move_duration_s},
         }
         try:
             transport.send(cmd)
@@ -187,9 +203,24 @@ class LeaderBridge:
             logger.error("发送 move_joints 失败: %s -> 急停", exc)
             self._estop = True
 
+    def _send_heartbeat(self, transport: TransportLike) -> None:
+        """发 heartbeat 喂固件看门狗（固件只喂狗不回包，无拥塞）。"""
+        try:
+            transport.send({"cmd": "heartbeat", "params": {}})
+        except Exception as exc:  # noqa: BLE001
+            logger.error("发送 heartbeat 失败: %s -> 急停", exc)
+            self._estop = True
+
     def _send_estop(self, transport: TransportLike) -> None:
         try:
             transport.send({"cmd": "estop", "params": {}})
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _send_resume(self, transport: TransportLike) -> None:
+        """清掉固件可能的 estop/看门狗锁，让后续 move_joints 能被接受。"""
+        try:
+            transport.send({"cmd": "resume", "params": {}})
         except Exception:  # noqa: BLE001
             pass
 
@@ -201,20 +232,24 @@ class LeaderBridge:
         *,
         stop_event: Any = None,
     ) -> None:
-        """持续运行：read_hz 读、send_hz 发。stop_event 提供 is_set() 则用于优雅停止。"""
+        """持续运行：send_hz 周期内 读主动臂并 step(目标变才发 move_joints)，
+        每周期都发 heartbeat 喂固件看门狗（从动臂静止也不被刹停）。
+        启动先发 resume 清掉可能残留的 estop/看门狗锁。
+        """
         logger.info("遥操作桥启动: 读 %.0fHz / 发 %.0fHz", self._read_hz, self._send_hz)
-        read_period = 1.0 / self._read_hz
+        self._send_resume(transport)  # 清残留 estop
         send_period = 1.0 / self._send_hz
-        next_send = 0.0
+        next_cycle = time.monotonic()
         while not self._estop:
             if stop_event is not None and stop_event.is_set():
                 break
             t0 = time.monotonic()
 
-            # 读频率内持续读并 step（step 内部按 deadband 决定是否真发）
-            if time.monotonic() >= next_send:
-                self.step(leader, transport)
-                next_send = time.monotonic() + send_period
+            # 读主动臂 + 若目标变化则发 move_joints
+            self.step(leader, transport)
+
+            # 喂看门狗（每次 step 后都发，保证从动臂静止也不被刹停）
+            self._send_heartbeat(transport)
 
             # 主动臂断连检测：超时未读到有效值 -> 急停
             if self._last_read_ok and (time.monotonic() - self._last_read_ok) > self._estop_tolerance_s:
@@ -225,7 +260,7 @@ class LeaderBridge:
 
             # 限速
             elapsed = time.monotonic() - t0
-            sleep = read_period - elapsed
+            sleep = send_period - elapsed
             if sleep > 0:
                 time.sleep(sleep)
 

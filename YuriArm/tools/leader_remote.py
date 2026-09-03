@@ -152,8 +152,12 @@ def main() -> int:
         max_velocity=float(leader_cfg.get("max_velocity", safety.get("max_velocity", 60.0))),
         deadband=float(leader_cfg.get("deadband", 0.5)),
         read_hz=float(leader_cfg.get("read_hz", 30.0)),
-        send_hz=float(leader_cfg.get("send_hz", 20.0)),
+        send_hz=float(leader_cfg.get("send_hz", 10.0)),
+        move_duration_s=float(leader_cfg.get("move_duration_s", 0.3)),
         estop_tolerance_s=float(leader_cfg.get("estop_tolerance_s", 1.0)),
+        # 实时遥操作不限制速度：限速会让大幅快动时从动臂被拖累、跟不上/停住。
+        # 限位仍在 joint_limits 里保证安全。若要保守可改 leader.json 打开。
+        apply_speed_limit=bool(leader_cfg.get("apply_speed_limit", False)),
     )
 
     # 互斥提醒：小车与从动臂不可同时动（半双工总线）

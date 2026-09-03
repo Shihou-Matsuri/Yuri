@@ -92,19 +92,23 @@ class TestMapAndClip(unittest.TestCase):
 
 
 class TestDeadband(unittest.TestCase):
-    def test_small_change_not_sent_first_time_sends(self):
+    def test_every_step_sends_latest_position(self):
+        """遥操作每帧都发当前绝对位置（不用死区抑制发送，避免大幅后停住）。"""
         bridge = make_bridge(deadband=2.0)
         leader = FakeLeader()
         t = FakeTransport()
-        # 首次：全发
+        # 首次发
         bridge.step(leader, t)
         self.assertEqual(len(t.sent), 1)
-        # 第二次：几乎没动（差 0.1 < 2.0 死区）-> 不发新 move_joints
+        # 第二次：小变化 (0.1) 也应发送且反映最新位置（每帧无条件发）
         leader.action = full_action(shoulder_pan=0.1)
+        out = bridge.step(leader, t)
+        self.assertIsNotNone(out)
+        self.assertAlmostEqual(out["shoulder_pan"], 0.1, places=6)
+        # 第三次：回到原位置也应发（持续跟踪，不回退）
+        leader.action = full_action(shoulder_pan=0.0)
         bridge.step(leader, t)
-        # 仍应发（保活）但目标值几乎不变 —— 检查 last 与 sent 一致性即可，此处验证变化被抑制
-        last_params = t.sent[-1]["params"]["targets"]
-        self.assertAlmostEqual(last_params["shoulder_pan"], 0.0, places=6)
+        self.assertEqual(len(t.sent), 3)
 
 
 class TestVelocityLimit(unittest.TestCase):

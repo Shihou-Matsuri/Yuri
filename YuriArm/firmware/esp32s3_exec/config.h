@@ -52,12 +52,12 @@ struct JointDef {
 };
 
 static const JointDef JOINTS[] = {
-  {"shoulder_pan",  1, NormMode::RANGE_M100_100,  787, 3126, 1500},
-  {"shoulder_lift", 2, NormMode::RANGE_M100_100,  986, 3252, 1500},
-  {"elbow_flex",    3, NormMode::RANGE_M100_100,  920, 3128, 1500},
-  {"wrist_flex",    4, NormMode::RANGE_M100_100,  922, 3154, 1500},
-  {"wrist_roll",    5, NormMode::RANGE_M100_100,  193, 3984, 1500},
-  {"gripper",       6, NormMode::RANGE_0_100,    1485, 2913, 1500},
+  {"shoulder_pan",  1, NormMode::RANGE_M100_100,  787, 3126, 1800},
+  {"shoulder_lift", 2, NormMode::RANGE_M100_100,  986, 3252, 1800},
+  {"elbow_flex",    3, NormMode::RANGE_M100_100,  920, 3128, 1800},
+  {"wrist_flex",    4, NormMode::RANGE_M100_100,  922, 3154, 1800},
+  {"wrist_roll",    5, NormMode::RANGE_M100_100,  193, 3984, 1800},
+  {"gripper",       6, NormMode::RANGE_0_100,    1485, 2913, 1800},
 };
 static constexpr int NUM_JOINTS = (int)(sizeof(JOINTS) / sizeof(JOINTS[0]));
 
