@@ -1,1 +1,2 @@
-YuriChassis/release/DualRemote.exe filter=lfs diff=lfs merge=lfs -text
+YuriChassis/release/DualRemote.exe filter=lfs diff=lfs merge=lfs -text
+YuriConsole/release/YuriConsole.exe filter=lfs diff=lfs merge=lfs -text

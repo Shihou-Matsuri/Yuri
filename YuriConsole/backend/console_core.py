@@ -57,6 +57,7 @@ class ConsoleCore:
         self._thread = None
         self._last_tick = 0.0
         self._last_ping = 0.0
+        self._pending_cmds: list[bytes] = []  # 即时指令队列，writer 线程单写者发送
         self._mock_pos = {j: 0.0 for j in ("shoulder_pan", "shoulder_lift", "elbow_flex",
                                             "wrist_flex", "wrist_roll", "gripper")}
         self._mock_v = 0.0
@@ -168,6 +169,23 @@ class ConsoleCore:
                     self._tick()
                 except Exception as exc:
                     self.log("error", f"链路异常: {exc}")
+                    with self._lock:
+                        self.connected = False
+                        self.car_motion = None
+                    try:
+                        if self.leader is not None:
+                            self.leader.disconnect()
+                    except Exception:
+                        pass
+                    try:
+                        if self.transport is not None:
+                            self.transport.close()
+                    except Exception:
+                        pass
+                    with self._lock:
+                        self.leader = None
+                        self.bridge = None
+                        self.transport = None
                     self._stop.set()
             time.sleep(0.004)
 
@@ -177,6 +195,9 @@ class ConsoleCore:
             return
         if self.transport is None or not self.connected:
             return
+        now = time.monotonic()
+        # 0. 先发即时指令（急停/恢复等入队项；单写者：仅本 writer 线程 send）
+        self._flush_pending()
         # 1. 机械臂遥操作（teleop_joints 直写）
         if self.arm_enabled and self.bridge is not None and self.leader is not None:
             self.bridge.step(self.leader, self.transport)
@@ -205,7 +226,7 @@ class ConsoleCore:
             if motion is None:
                 return
             if self.car_estop:
-                self._send_now(b'{"cmd":"car_resume"}\n')
+                self._enqueue_cmd(b'{"cmd":"car_resume"}\n')
                 self.car_estop = False
                 self.log("info", "小车已恢复（car_resume）")
             self.car_motion = motion
@@ -219,7 +240,7 @@ class ConsoleCore:
         with self._lock:
             self.car_motion = None
             self.car_estop = True
-            self._send_now(b'{"cmd":"car_stop"}\n')
+            self._enqueue_cmd(b'{"cmd":"car_stop"}\n')
             self.log("warn", "轮子急停（car_stop）")
 
     def global_estop_cmd(self) -> None:
@@ -228,23 +249,32 @@ class ConsoleCore:
             self.car_motion = None
             self.global_estop = True
             self.car_estop = True
-            self._send_now(b'{"cmd":"estop"}\n')
+            self._enqueue_cmd(b'{"cmd":"estop"}\n')
             self.log("error", "全局急停（estop）")
 
     def resume_cmd(self) -> None:
         with self._lock:
             self.global_estop = False
             self.car_estop = False
-            self._send_now(b'{"cmd":"resume"}\n')
-            self._send_now(b'{"cmd":"car_resume"}\n')
+            self._enqueue_cmd(b'{"cmd":"resume"}\n')
+            self._enqueue_cmd(b'{"cmd":"car_resume"}\n')
             self.log("info", "已恢复（resume + car_resume）")
 
     def set_arm_enabled(self, on: bool) -> None:
         with self._lock:
             self.arm_enabled = bool(on)
 
-    def _send_now(self, data: bytes) -> None:
-        if not self.mock and self.transport is not None:
+    def _enqueue_cmd(self, data: bytes) -> None:
+        """即时指令入队，由 writer 线程统一发送（保持串口/网络单写者）。"""
+        if self.mock:
+            return
+        with self._lock:
+            self._pending_cmds.append(data)
+
+    def _flush_pending(self) -> None:
+        with self._lock:
+            pending, self._pending_cmds = self._pending_cmds, []
+        for data in pending:
             try:
                 self.transport.send(data)
             except Exception as exc:

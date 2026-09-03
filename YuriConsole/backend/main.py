@@ -22,7 +22,8 @@ from pydantic import BaseModel
 _HERE = Path(__file__).resolve()
 _BACKEND = _HERE.parent
 _CONSOLE = _BACKEND.parent
-_DIST = _CONSOLE / "frontend" / "dist"
+_BUNDLE = Path(getattr(sys, "_MEIPASS", str(_CONSOLE)))  # PyInstaller 解压目录；源码跑 = YuriConsole
+_DIST = _BUNDLE / "frontend" / "dist"
 
 sys.path.insert(0, str(_BACKEND))
 from console_core import ConsoleCore  # noqa: E402
@@ -137,18 +138,21 @@ def main() -> int:
     import uvicorn
 
     url = f"http://{args.host}:{args.port}"
-    if args.webview:
-        import webview
+    if args.webview or getattr(sys, "frozen", False):
+        try:
+            import webview
 
-        threading.Thread(
-            target=lambda: uvicorn.run(app, host=args.host, port=args.port, log_level="warning"),
-            daemon=True,
-        ).start()
-        webview.create_window("Yuri 综合遥控台", url, width=1280, height=820, min_size=(1100, 700))
-        webview.start()
-    else:
-        _open_browser(url)
-        uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+            threading.Thread(
+                target=lambda: uvicorn.run(app, host=args.host, port=args.port, log_level="warning"),
+                daemon=True,
+            ).start()
+            webview.create_window("Yuri 综合遥控台", url, width=1280, height=820, min_size=(1100, 700))
+            webview.start()
+            return 0
+        except Exception as exc:
+            print(f"[main] 桌面壳不可用({exc})，退回浏览器")
+    _open_browser(url)
+    uvicorn.run(app, host=args.host, port=args.port, log_level="info")
     return 0
 
 
