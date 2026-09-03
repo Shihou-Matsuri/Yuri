@@ -140,14 +140,26 @@ void handleStream(Stream& s) {
   }
 }
 
-void handleClient(WiFiClient& client) {
-  Serial.println("[TCP] client connected");
-  while (client.connected()) {
-    tickMotion();
-    handleStream(client);
+// WiFi 客户端用全局持有 + 主循环每轮只处理一次（非阻塞），
+// 避免 while(client.connected()) 死循环饿死 USB/BLE/其他通道。
+static WiFiClient tcpClient;
+
+void handleClient() {
+  if (!tcpClient.connected()) {
+    // 无活动客户端：尝试 accept 新连接
+    tcpClient = server.available();
+    if (tcpClient) {
+      Serial.println("[TCP] client connected");
+      tcpClient.setNoDelay(true);  // 关闭 Nagle，降低指令延迟
+    }
+    return;
   }
-  Serial.println("[TCP] client disconnected");
-  client.stop();
+  // 有活动客户端：每轮只处理当前可读数据，不阻塞
+  handleStream(tcpClient);
+  if (!tcpClient.connected()) {
+    Serial.println("[TCP] client disconnected");
+    tcpClient.stop();
+  }
 }
 
 // ---- BLE 指令通道（GATT：RX=写指令，TX=通知回包） ----
@@ -283,10 +295,7 @@ void loop() {
   handleStream(Serial0);         // UART0（CH343 USB 转串口 / 调试口，默认 GPIO43/44）
   bleProcessCommands();          // BLE 指令队列 -> 主循环处理
   bleFlushPending();             // BLE 响应逐片发送
-  WiFiClient client = server.available();
-  if (client) {
-    handleClient(client);
-  }
+  handleClient();                // WiFi TCP 非阻塞处理（不饿死其他通道）
   delay(1);
 }
 
