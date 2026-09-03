@@ -1,0 +1,16 @@
+{
+  "leader": {
+    "port": "COM7",
+    "id": "so101_leader",
+    "read_hz": 30.0,
+    "send_hz": 20.0,
+    "deadband": 0.5,
+    "max_velocity": 60.0,
+    "estop_tolerance_s": 1.0
+  },
+  "link": {
+    "type": "tcp",
+    "host": "192.168.4.1",
+    "port": 8765
+  }
+}

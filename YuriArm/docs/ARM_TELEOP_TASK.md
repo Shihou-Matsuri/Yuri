@@ -2,7 +2,12 @@
 
 > 目标：主动臂（leader）接在电脑上，由人握着操作；电脑读取主动臂关节角，
 > 通过 YuriArm 的 ESP32-S3 无线执行端远程驱动从动臂（follower）。
-> 本任务交给合作者实现，当前仓库只有相关参考，还没有 PC-ESP32 遥操作链路。
+
+> **实现状态（2026-09-03）**：合作者已完成 §8 建议交付物并提交到本仓库：
+> `yuriarm/leader_bridge.py`、`yuriarm/esp32_transport.py`、`configs/leader.json`、
+> `tools/leader_remote.py`、`tests/test_leader_bridge.py`（7 测试通过，无硬件可跑）。
+> 用法见 §3 与 §5；`--mock` 可离线验证，真机用 `tools/leader_remote.py --link serial --serial COMx`。
+> 已通过真机链路 ping（主动臂 COM7 + ESP32），实际运动联调待从动臂供电后完成。
 
 ## 1. 结论先行
 
