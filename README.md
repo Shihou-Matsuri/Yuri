@@ -2,77 +2,86 @@
 
 机械臂 + 小车 + 摄像头协同的模块化机器人（基于 ESP32-S3 无线执行端）。
 
+> **动手前先读 [SOUL.md](SOUL.md)** —— 核心架构决策与血泪教训（遥操作直写、
+> 高频指令不回包、单实例锁、真机联调铁律）。
+
 ## 仓库结构
 
 | 目录 | 说明 |
 |---|---|
-| `YuriArm/` | SO-101 机械臂指令控制、抓取规划、ESP32-S3 无线执行端固件（已完成并真机验证） |
-| `YuriEye/` | 彩色立方体识别（YOLOv8 + 相机标定），作为感知层接入 |
+| `YuriArm/` | SO-101 机械臂：ESP32-S3 固件（`firmware/esp32s3_exec/`）+ 遥操作桥（`yuriarm/`+`tools/leader_remote.py`） |
+| `YuriChassis/` | 三轮 kiwi 底盘：运动学 + WiFi 键盘遥控（`car_remote.py`） |
+| `YuriEye/` | 彩色立方体识别（YOLOv8 + 相机标定），感知层 |
+| `LeKiwiTeleop/` | LeKiwi 有线主从遥操作参考（独立文档，非本架构） |
+| `SOUL.md` | **设计灵魂与教训，先读** |
 
-## 当前状态（2026-09-02）
+## 当前状态（2026-09-04）
 
 | 模块 | 状态 |
 |---|---|
-| YuriArm 指令协议 / 机械臂驱动 / 夹取 / 规划 / 状态机 | ✅ 完成，`--mock` 可无硬件跑测试 |
-| ESP32-S3 无线执行端（WiFi AP / USB / BLE 三通道，6×STS3215） | ✅ 真机验证（F1/F2） |
-| YuriEye 视觉识别 | ✅ YOLO 模型已训练（mAP50 0.949），待与 YuriArm 集成 |
-| ESP32 遥控小车 | ✅ WiFi/BLE 键盘遥控代码就绪，ID 7/8/9 已真机点动验证 |
-| 机械臂 + 轮子 + 摄像头协同 | 🔜 远期目标 |
+| ESP32-S3 无线执行端（WiFi AP + USB，6×STS3215） | ✅ 真机验证 |
+| **主动臂 → 从动臂遥操作（teleop_joints 直写）** | ✅ 真机验证：小幅/大幅/多关节跟手，不卡死 |
+| 小车 WiFi 键盘遥控（car_drive 电机恒速） | ✅ 真机验证（含自动重连） |
+| BLE 通道 | 🔇 已禁用（用户决策：只留 WiFi） |
+| YuriEye 视觉识别 | 🔜 待与机械臂集成 |
 
 ## 架构
 
 ```
-笔记本（感知/规划/指令）
-        │ WiFi AP 192.168.4.1:8765 / BLE YuriArm-S3
+笔记本（感知/规划/遥操作桥）
+        │ WiFi AP 192.168.4.1:8765 / USB 串口 115200
         ▼
-   ESP32-S3（无线执行端：插值 / 看门狗 / 本地急停）
+   ESP32-S3（无线执行端：直写 / 看门狗 500ms / 本地急停）
         │
-        ├── UART1 ＋ Waveshare Adapter(A) ──► 从动臂 6×STS3215（已验证）
-        └── UART2 ＋ Waveshare Adapter(A) ──► 小车 3 舵机（待接，见任务文档）
+        ├── UART1 ＋ Waveshare Adapter(A) ──► 从动臂 6×STS3215
+        └── UART2 ＋ Waveshare Adapter(A) ──► 小车 3 舵机（ID 7/8/9）
 ```
 
 ## 快速开始
 
-### YuriArm（机械臂，仿真后端无硬件）
+### 主动臂 → 从动臂遥操作（本机 USB 方式）
 
 ```powershell
 cd YuriArm
-& E:\Anaconda\envs\lerobot\python.exe -m yuriarm --mock status
-& E:\Anaconda\envs\lerobot\python.exe -m yuriarm --mock move --shoulder_lift=30 --duration 0.3
+C:\Users\21209\lerobot_venv312\Scripts\python.exe tools\leader_remote.py --link serial --serial COM8
 ```
 
-> 真机/标定/抓取详细用法见 `YuriArm/README.md`。
+- 前置：主动臂 COM7、ESP32 COM8、从动臂供电；小车不得同时运行。
+- WiFi 方式：电脑连 `YuriArm-AP`（密码 yuriarm123），`--link tcp`。
+- 停止：Ctrl+C（自动 estop）。更多见 `YuriArm/README.md`。
 
-### ESP32 无线执行端
+### 小车 WiFi 键盘遥控
 
 ```powershell
-# 串口/蓝牙驱动工具在 YuriArm/tools/ 下
-& E:\Anaconda\envs\lerobot\python.exe YuriArm\tools\esp32_ble.py --status
-& E:\Anaconda\envs\lerobot\python.exe YuriArm\tools\esp32_smoke.py --serial COM19 --diag
+cd YuriChassis
+C:\Users\21209\lerobot_venv312\Scripts\python.exe car_remote.py
 ```
 
-固件说明见 `YuriArm/firmware/esp32s3_exec/README.md` 与 `YuriArm/firmware/protocol.md`。
+W/S 前后 · A/D 横移 · Z/X 旋转 · 空格停 · E 急停 · Q 退出（车体抬空首测）。
 
-### YuriEye（视觉）
+### 烧录固件
 
 ```powershell
-cd YuriEye
-# 需自行训练/获取权重（data/、runs/、weights/ 不入库，避免仓库过大）
-& E:\Anaconda\envs\lerobot\python.exe tools\live_detect.py
+cd YuriArm/firmware/esp32s3_exec
+$HOME/.arduino-cli/arduino-cli.exe upload -p COM8 --fqbn esp32:esp32:esp32s3:CDCOnBoot=cdc .
+# 需手动 BOOT+RESET；指令口波特率 115200
 ```
 
 ## 设计约束（维护者请遵守）
 
 - 只通过 lerobot 公共接口驱动真机，不改动父仓库代码。
-- 新增/修改必须与现有模块在**同一运行上下文**兼容；不得写死临时逻辑、破坏协议接口契约。
-- 改动前先做全局兼容性检查；如与 `protocol.py` / 固件 `protocol.cpp` 不一致，须同步。
-- 每处改动列出技术债与回归风险，并同步更新本文档与对应 README。
+- **遥操作用 `teleop_joints` 直写**；`move_joints` 仅用于脚本化单次移动。
+- **高频指令（heartbeat/car_drive/move_joints/teleop_joints）不回包**；
+  需要状态用 status/telemetry 轮询。
+- 新增/修改必须与现有模块在**同一运行上下文**兼容；固件 `protocol.cpp` 与
+  `firmware/protocol.md`、PC 侧命令表必须同步。
+- 每处改动列出技术债与回归风险，并同步更新 README / protocol.md / SOUL.md。
 
 ## 相关文档
 
+- `SOUL.md`：设计灵魂与教训（先读）
 - `YuriArm/docs/方案设计.md`：YuriArm 设计
+- `YuriArm/firmware/protocol.md`：ESP32 JSON 协议（含 teleop_joints）
 - `YuriArm/docs/ARM_TELEOP_TASK.md`：主动臂遥控从动臂交接任务
-- `YuriArm/firmware/protocol.md`：ESP32 JSON 协议
-- `YuriEye/docs/方案设计.md`：YuriEye 设计
+- `docs/ESP32_CAR_TASK.md`：ESP32 遥控小车任务
 - `docs/ROADMAP.md`：总体路线
-- `docs/ESP32_CAR_TASK.md`：ESP32 遥控小车任务（给协作方）

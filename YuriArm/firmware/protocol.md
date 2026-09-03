@@ -41,7 +41,8 @@
 |---|---|---|
 | ping | 连通性 | {} |
 | status | 状态（已连接/力矩/看门狗） | {} |
-| move_joints | 插值移动到目标关节角 | targets, duration?, max_velocity? |
+| move_joints | **插值**移动到目标关节角（脚本化单次移动用） | targets, duration? |
+| teleop_joints | **直写**遥操作：6 关节归一化目标直接写 Goal_Position，无插值/无读回/不回包 | targets |
 | move_to_pose | 移动到命名姿态（固件内置姿态表） | pose |
 | open_gripper / close_gripper | 夹爪（close 用负载判定） | close: max_load?, timeout? |
 | pick | 本地执行完整拾取周期 | pick_high?, pick_low?, drop? |
@@ -50,6 +51,7 @@
 | telemetry | 遥测（位置/负载/电压/温度） | {} |
 | bus_diag | 诊断 UART1/UART2：回显 + 逐 ID ping | {} |
 | bus_scan | 全 ID 扫描 UART1，查找从动臂实际舵机 | {} |
+| bus_pos / bus_goto | 读/写单舵机原始寄存器（诊断/重标定 range 用） | id, addr / raw |
 | car_scan | 全 ID 扫描 UART2 当前/交换方向，查找小车实际舵机 | {} |
 | car_status | 小车遥测（id/position/load/电压/温度） | {} |
 | car_move | 小车按原始位置移动（伺服模式） | targets={"7":...,"8":...,"9":...}, duration |
@@ -61,6 +63,25 @@
 > 无线版把 `move_joints`/`pick` 解析为本地轨迹缓冲（每关节时间戳+目标），`GO` 语义由
 > `move_joints` 本身承担（收到即开始执行）；`estop` 由 ESP32 侧 200ms 看门狗 + 本地负载
 > 监测兜底。`run`/`scan`/`calibrate` 属于笔记本侧，不下发固件。
+
+### teleop_joints（直写遥操作，2026-09-04 新增）
+
+主动臂 → 从动臂**实时遥操作**专用：把 6 关节归一化目标（`targets` 键值同 move_joints）
+直接转 raw 写 `Goal_Position`——**不做固件插值**（舵机内部速度控制自行平滑）、
+**不读回位置**、**不回包**。每帧覆盖为最新目标，天然无积压。
+
+- 为什么不是 move_joints：插值状态机在"真 leader 多关节持续大幅变化"下会卡死
+  （续目标边界 bug 修了 6+ 轮，根因是状态机本身不适合遥操作）。见 `SOUL.md`。
+- 遥操作桥（leader_remote.py）默认发本指令；move_joints 保留给脚本化单次移动。
+- 帧即喂狗；断连 500ms 由看门狗急停（watchdog 覆盖 `teleopActive` 状态，
+  与插值中同等对待）。
+- 响应被抑制（与 heartbeat/car_drive/move_joints 一致），需要状态用 status/telemetry 轮询。
+
+### 高频指令回包抑制（2026-09-04）
+
+`heartbeat`、`car_drive`、`move_joints`、`teleop_joints` 四条高频指令**不回包**。
+20Hz 遥操作若每条回 JSON，响应堆积会淹没 ping pong，导致客户端误判断连重连。
+固件实现见 `esp32s3_exec.ino` 的 `processCommandLine`。
 
 ### car_drive（小车电机恒速模式，2026-09-02 新增）
 
