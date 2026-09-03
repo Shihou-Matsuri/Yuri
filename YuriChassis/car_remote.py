@@ -17,7 +17,7 @@
     - 首测务必车体抬空，确认三轮方向后再落地（见 kiwi_drive.py 标定说明）。
     - car_drive 是持续速度：脚本以 20Hz 持续下发，断连或退出时固件
       500ms 无指令会自动清 0 速刹停（保持扭矩防溜坡），脚本退出也会先 car_stop。
-    - 与机械臂互斥：行驶期间从动臂不得动作（半双工总线同一时刻只能一条总线工作）。
+    - 与机械臂互斥：行驶期间主臂不得动作（半双工总线同一时刻只能一条总线工作）。
 """
 from __future__ import annotations
 
@@ -88,7 +88,9 @@ class TcpTransport(Transport):
 
 
 class SerialTransport(Transport):
-    def __init__(self, port: str, baud: int = 1000000) -> None:
+    def __init__(self, port: str, baud: int = 115200) -> None:
+        # 注意：这是 ESP32 的调试/指令口（固件 Serial.begin(115200)），
+        # 不是舵机总线（1M）。用错波特率固件会收到乱码、指令静默无效。
         import serial
 
         self.ser = serial.Serial(port, baud, timeout=0.2)
@@ -122,6 +124,9 @@ def main() -> None:
         SerialTransport(args.serial) if args.serial else TcpTransport(args.host, args.port)
     )
     link_name = f"串口 {args.serial}" if args.serial else f"TCP {args.host}:{args.port}"
+
+    # 清掉可能的 estop 残留（上次 car_stop/看门狗触发后需 resume 才能恢复控制）
+    transport.send(b'{"cmd":"resume"}\n')
 
     import msvcrt
 
@@ -173,10 +178,11 @@ def main() -> None:
         stop_reason = RemoteStop.QUIT
         print("\n[car_remote] Ctrl+C")
     finally:
-        # 收尾：先清速刹停再关扭矩，然后断连（固件另有 500ms 看门狗兜底）
+        # 收尾：清 0 速刹停（保扭矩防溜坡，不置 estop——下次启动可直接开）。
+        # 不用 car_stop：它会置 estop，导致下次 car_drive 被拒（需 resume）。
         try:
-            send_car_stop(transport)
-            print(f"[car_remote] 已 car_stop（{stop_reason.value}）")
+            transport.send(b'{"cmd":"car_drive","params":{"raw":[0,0,0]}}\n')
+            print(f"[car_remote] 已刹停（{stop_reason.value}）")
         except (ConnectionError, OSError):
             pass
         transport.close()
