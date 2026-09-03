@@ -12,6 +12,9 @@
                                     // 设计值 200ms 针对 WiFi TCP（RTT 1-5ms）；
                                     // BLE / 无电机总线超时场景下 200ms 太紧，放宽到 500ms 仍能安全兜底
 #define MOVE_STEPS_HZ      20.0f   // 插值步频（PC 侧 safety.move_steps_hz=20）
+#define MAX_RAW_PER_TICK   220     // 每 tick(50ms) 单关节最大 raw 步进（≈舵机物理速度上限，
+                                    // STS3215 空载 ~341raw/tick，带载取 220 保守；防止固件插值
+                                    // 要求超物理速度导致"固件以为到位、舵机实际没到"的累积滞后/卡死）
 #define DEFAULT_ESTOP_LOAD 1500.0f // Present_Load 绝对值阈值（5V 工况，见 config.py 注释）
 
 // ===================== 引脚（ESP32-S3-DevKitC-1 默认；换板只改这里） =====================

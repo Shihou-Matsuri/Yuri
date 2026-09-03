@@ -135,17 +135,33 @@ bool MotionController::moveToNorm(const float targets[NUM_JOINTS], uint32_t dura
 
 bool MotionController::tick() {
   if (!interp_) return false;
-  if (stepsDone_ >= stepsTotal_) {
-    // 收尾：精确写最终目标
+  // 限速插值：每 tick 每关节最多走 MAX_RAW_PER_TICK，朝 to_ 方向推进。
+  // 目标近则 1 tick 到位（低延迟）；目标远则匀速追踪（不超舵机物理速度，
+  // 避免"固件以为到位、舵机实际没到"的累积滞后——那是大幅动作卡死的根因）。
+  int16_t raw[NUM_JOINTS];
+  bool done = true;
+  for (int i = 0; i < NUM_JOINTS; i++) {
+    int16_t target = to_[i];
+    int16_t cur = (int16_t)lroundf(from_[i] + delta_[i] * (float)stepsDone_);
+    int32_t diff = (int32_t)target - (int32_t)cur;
+    if (diff > MAX_RAW_PER_TICK) {
+      cur += MAX_RAW_PER_TICK;
+      done = false;
+    } else if (diff < -MAX_RAW_PER_TICK) {
+      cur -= MAX_RAW_PER_TICK;
+      done = false;
+    } else {
+      cur = target;  // 剩余距离不足一步，直接到位
+    }
+    raw[i] = cur;
+  }
+  writeGoalRaw(raw);
+  stepsDone_++;
+  if (done) {
+    // 全部到位：精确写最终目标并结束插值
     writeGoalRaw(to_);
     interp_ = false;
     return false;
   }
-  int16_t raw[NUM_JOINTS];
-  for (int i = 0; i < NUM_JOINTS; i++) {
-    raw[i] = (int16_t)lroundf(from_[i] + delta_[i] * (float)stepsDone_);
-  }
-  writeGoalRaw(raw);
-  stepsDone_++;
   return true;
 }
