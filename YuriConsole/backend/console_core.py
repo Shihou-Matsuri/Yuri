@@ -26,6 +26,7 @@ for _p in (_YURICHASSIS, _YURIARM):
 import kiwi_drive  # noqa: E402
 from car_remote import SerialTransport, TcpTransport, build_speeds, encode_command  # noqa: E402
 from dual_remote import _JsonTransport  # noqa: E402
+import camera_car_gamepad as gamepad_api  # noqa: E402
 
 TICK_HZ = 20.0
 SEND_PERIOD = 1.0 / TICK_HZ
@@ -73,6 +74,74 @@ class ConsoleCore:
         self._mock_v = 0.0
         self.logs = []                  # (ts, level, msg)
         self._log_max = 500
+        self.gamepad = None
+        self._init_gamepad()
+
+    def _init_gamepad(self) -> None:
+        try:
+            self.gamepad = gamepad_api.XInputController()
+        except Exception:
+            self.gamepad = None
+
+    def gamepad_state(self) -> dict:
+        if self.gamepad is None:
+            return {
+                "connected": False,
+                "left_x": 0.0,
+                "left_y": 0.0,
+                "right_x": 0.0,
+                "right_y": 0.0,
+                "left_trigger": 0.0,
+                "right_trigger": 0.0,
+                "buttons": {},
+                "error": None,
+            }
+        try:
+            snap = self.gamepad.read()
+            return {
+                "connected": True,
+                "left_x": snap.left_x,
+                "left_y": snap.left_y,
+                "right_x": snap.right_x,
+                "right_y": snap.right_y,
+                "left_trigger": snap.left_trigger,
+                "right_trigger": snap.right_trigger,
+                "buttons": {
+                    "a": bool(snap.buttons & gamepad_api.BTN_A),
+                    "b": bool(snap.buttons & gamepad_api.BTN_B),
+                    "x": bool(snap.buttons & gamepad_api.BTN_X),
+                    "y": bool(snap.buttons & gamepad_api.BTN_Y),
+                    "lb": bool(snap.buttons & gamepad_api.BTN_LB),
+                    "rb": bool(snap.buttons & gamepad_api.BTN_RB),
+                    "dpad_up": bool(snap.buttons & gamepad_api.BTN_DPAD_UP),
+                    "dpad_down": bool(snap.buttons & gamepad_api.BTN_DPAD_DOWN),
+                },
+                "error": None,
+            }
+        except gamepad_api.GamepadNotConnectedError:
+            return {
+                "connected": False,
+                "left_x": 0.0,
+                "left_y": 0.0,
+                "right_x": 0.0,
+                "right_y": 0.0,
+                "left_trigger": 0.0,
+                "right_trigger": 0.0,
+                "buttons": {},
+                "error": None,
+            }
+        except Exception as exc:
+            return {
+                "connected": False,
+                "left_x": 0.0,
+                "left_y": 0.0,
+                "right_x": 0.0,
+                "right_y": 0.0,
+                "left_trigger": 0.0,
+                "right_trigger": 0.0,
+                "buttons": {},
+                "error": str(exc),
+            }
 
     # ------------------------------------------------------------ 日志
     def log(self, level: str, msg: str) -> None:

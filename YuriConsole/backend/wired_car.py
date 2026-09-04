@@ -36,6 +36,7 @@ class WiredCarCore:
         self.connected = False
         self.torque_on = False
         self.motion = None          # cc.Motion 或 None
+        self.vel = None             # (vx, vy, omega)，手柄连续速度
         self._stop = threading.Event()
         self._thread = None
         self._last_tick = 0.0
@@ -58,6 +59,7 @@ class WiredCarCore:
             self.connected = True
             self.torque_on = True
             self.motion = None
+            self.vel = None
             self._start()
             return "ok"
 
@@ -76,6 +78,7 @@ class WiredCarCore:
             self.connected = False
             self.torque_on = False
             self.motion = None
+            self.vel = None
 
     # ------------------------------------------------------------ 动作
     def press(self, key: str) -> None:
@@ -93,15 +96,32 @@ class WiredCarCore:
                 except Exception:
                     return
             self.motion = motion
+            self.vel = None
 
     def release(self) -> None:
         with self._lock:
+            self.motion = None
+            self.vel = None
+
+    def vel_set(self, vx: float, vy: float, omega: float) -> None:
+        """手柄摇杆连续速度；有输入时覆盖键盘方向。"""
+        with self._lock:
+            if not self.connected:
+                return
+            if not self.torque_on:
+                try:
+                    cc.prepare(self.ser, self.config, print_status=False)
+                    self.torque_on = True
+                except Exception:
+                    return
+            self.vel = (float(vx), float(vy), float(omega))
             self.motion = None
 
     def estop(self) -> None:
         """0 速 + 扭矩关（同 camera_car_drive 的 E）。"""
         with self._lock:
             self.motion = None
+            self.vel = None
             if self.connected and self.ser is not None:
                 try:
                     cc.stop(self.ser, self.config)
@@ -131,7 +151,9 @@ class WiredCarCore:
                     with self._lock:
                         if not self.connected or self.ser is None:
                             continue
-                        if self.motion is None:
+                        if self.vel is not None:
+                            cc.move(self.ser, self.config, *self.vel)
+                        elif self.motion is None:
                             cc.stop(self.ser, self.config)      # 0 速刹停（保持扭矩）
                         else:
                             cc.command(self.ser, self.config, self.motion)
@@ -154,6 +176,10 @@ class WiredCarCore:
                 "connected": self.connected,
                 "port": self.port,
                 "motion": None if self.motion is None else self.motion.value,
+                "vel": self.vel,
                 "torque_on": self.torque_on,
                 "error": self._error,
             }
+
+    def list_ports(self) -> list[str]:
+        return cc.list_serial_ports()

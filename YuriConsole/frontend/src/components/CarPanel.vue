@@ -71,7 +71,6 @@ let padTimer = null
 const isLock = computed(() => store.carMode === 'lock')
 const padLevel = computed(() => (padConnected.value ? 'ok' : 'off'))
 const padText = computed(() => {
-  if (!('getGamepads' in navigator)) return '浏览器不支持 Gamepad API（建议 Edge/Chrome）'
   return padConnected.value
     ? '左摇杆移动 · X 顺转 / Y 逆转 · A 恢复 · B 停止 · LB 开夹 / RB 合夹'
     : '未检测到手柄：连接手柄后，在页面上按手柄任意键激活'
@@ -86,22 +85,20 @@ function signAxis(v, neg) { // 转方向满速
   return (v < 0 ? 1 : -1) * (neg ? -1 : 1)
 }
 
-function pollGamepad() {
+async function pollGamepad() {
   if (inputMode.value !== 'gamepad' || !store.state.connected) return
-  const pads = navigator.getGamepads ? navigator.getGamepads() : []
-  const gp = pads.find((p) => p && p.connected)
-  padConnected.value = !!gp
-  if (!gp) {
+  const gp = await store.gamepadState()
+  padConnected.value = gp.connected
+  if (!gp.connected) {
     if (padWasConnected) { store.carVel(0, 0, 0); if (rsRole.value === 'arm') store.armPad(false) }
     padWasConnected = false
     return
   }
   padWasConnected = true
-  const a = gp.axes
-  const lx = dz(a[AX.LX] || 0), ly = dz(a[AX.LY] || 0)
-  const rx = dz(a[AX.RX] || 0), ry = dz(a[AX.RY] || 0)
-  const b = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed)
-  const now = { A: b(BTN.A), B: b(BTN.B), X: b(BTN.X), Y: b(BTN.Y), LB: b(BTN.LB), RB: b(BTN.RB) }
+  const lx = dz(gp.left_x || 0), ly = dz(gp.left_y || 0)
+  const rx = dz(gp.right_x || 0), ry = dz(gp.right_y || 0)
+  const b = (name) => !!(gp.buttons && gp.buttons[name])
+  const now = { A: b('a'), B: b('b'), X: b('x'), Y: b('y'), LB: b('lb'), RB: b('rb') }
 
   // 夹爪：LB 开 / RB 合（边沿）
   if (now.LB && !prevBtn.LB) store.gripper('open')
@@ -115,7 +112,7 @@ function pollGamepad() {
   const armRole = rsRole.value === 'arm'
   if (armRole) {
     // 右摇杆上下 = lift、左右 = pan；十字键上下 = elbow_flex（前后）
-    const dpz = (b(BTN.DPAD_UP) ? 1 : 0) + (b(BTN.DPAD_DOWN) ? -1 : 0)
+    const dpz = (b('dpad_up') ? 1 : 0) + (b('dpad_down') ? -1 : 0)
     store.armPad(true, rx, ry, dpz)
   } else if (rx !== 0 || ry !== 0) { /* 转向走下方 omega */ }
 

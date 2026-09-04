@@ -45,6 +45,7 @@ cd frontend && npm run dev
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | /api/state | 聚合状态（连接/急停/姿态/轮速） |
+| GET | /api/gamepad/state | XInput 手柄状态（摇杆/按钮） |
 | POST | /api/connect | {link: tcp\|serial, serial_port?, leader_port} |
 | POST | /api/disconnect | 断开（0 速 + estop 收尾） |
 | POST | /api/car/press | {key: w/a/s/d/z/x} 按住 |
@@ -54,10 +55,12 @@ cd frontend && npm run dev
 | POST | /api/resume | 恢复 |
 | POST | /api/arm/enabled | {enabled} 臂遥操作开关 |
 | GET | /api/logs | 日志（?level=info\|warn\|error） |
+| GET | /api/wired/ports | 有线相机车可用串口列表 |
+| POST | /api/wired/vel | 有线相机车摇杆速度 {vx, vy, omega} |
 
 ## 技术债 / 待办（U2 未完）
 
-- 真机模式未经真机验证（结构复用 dual_remote，需实机回归）。
+- F 有线相机车现支持 COM 下拉、键盘按钮和 XInput 手柄；真机方向仍以现场标定为准。
 - D 视觉区为占位，YuriEye 接入未做（V1 里程碑）。
 - B 区脚本化 move_joints / 单关节步进未做（保留 CLI）。
 - 小车反向开关未接入（见 camera_car_drive 标定）。

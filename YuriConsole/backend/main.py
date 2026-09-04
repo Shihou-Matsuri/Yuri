@@ -35,6 +35,11 @@ app = FastAPI(title="Yuri 综合遥控台")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
+@app.get("/api/gamepad/state")
+def gamepad_state() -> dict:
+    return core.gamepad_state()
+
+
 class ConnectReq(BaseModel):
     link: str = "tcp"
     serial_port: str | None = None
@@ -149,10 +154,21 @@ class WiredConnectReq(BaseModel):
     port: str | None = None
 
 
+class WiredVelReq(BaseModel):
+    vx: float = 0.0
+    vy: float = 0.0
+    omega: float = 0.0
+
+
 @app.post("/api/wired/connect")
 def wired_connect(req: WiredConnectReq) -> JSONResponse:
     msg = wired.connect(req.port)
     return JSONResponse({"ok": msg == "ok", "msg": msg})
+
+
+@app.get("/api/wired/ports")
+def wired_ports() -> list[str]:
+    return wired.list_ports()
 
 
 @app.post("/api/wired/disconnect")
@@ -170,6 +186,12 @@ def wired_press(req: KeyReq) -> JSONResponse:
 @app.post("/api/wired/release")
 def wired_release() -> JSONResponse:
     wired.release()
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/wired/vel")
+def wired_vel(req: WiredVelReq) -> JSONResponse:
+    wired.vel_set(req.vx, req.vy, req.omega)
     return JSONResponse({"ok": True})
 
 
