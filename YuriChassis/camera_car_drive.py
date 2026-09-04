@@ -57,12 +57,13 @@ class CarConfig:
     directions: dict[int, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        # 2026-09-04 真机校准：ID4 前中、ID5 后左、ID6 后右。
+        # 2026-09-04 真机校准：ID4 前中、ID5 后左、ID6 后右；
+        # 前进时后左/后右同向，后退相反。
         if not self.directions:
             self.directions = {
                 self.front_id: -1,
-                self.rear_left_id: 1,
-                self.rear_right_id: -1,
+                self.rear_left_id: -1,
+                self.rear_right_id: 1,
             }
 
     @property
@@ -80,8 +81,8 @@ class CarConfig:
     def with_directions(
         self,
         front_reversed: bool = True,
-        rear_left_reversed: bool = False,
-        rear_right_reversed: bool = True,
+        rear_left_reversed: bool = True,
+        rear_right_reversed: bool = False,
     ) -> CarConfig:
         self.directions = {
             self.front_id: -1 if front_reversed else 1,
@@ -310,8 +311,8 @@ def parse_args() -> argparse.Namespace:
         "--normal-rear-left",
         dest="rear_left_reversed",
         action="store_false",
-        default=False,
-        help="后左轮正向（当前默认正向）",
+        default=True,
+        help="后左轮正向（覆盖默认反向）",
     )
     parser.add_argument(
         "--rear-left-reversed",
@@ -323,8 +324,8 @@ def parse_args() -> argparse.Namespace:
         "--normal-rear-right",
         dest="rear_right_reversed",
         action="store_false",
-        default=True,
-        help="后右轮正向（覆盖默认反向）",
+        default=False,
+        help="后右轮正向（当前默认正向）",
     )
     parser.add_argument(
         "--rear-right-reversed",

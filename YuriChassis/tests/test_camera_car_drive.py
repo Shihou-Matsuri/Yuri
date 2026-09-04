@@ -15,11 +15,39 @@ from camera_car_gamepad import GamepadSnapshot, normalize_axis
 class CameraCarConfigTest(unittest.TestCase):
     def test_default_directions_match_calibration(self) -> None:
         config = car.CarConfig()
-        self.assertEqual(config.directions, {4: -1, 5: 1, 6: -1})
+        self.assertEqual(config.directions, {4: -1, 5: -1, 6: 1})
 
     def test_with_directions_defaults_match_calibration(self) -> None:
         config = car.CarConfig().with_directions()
-        self.assertEqual(config.directions, {4: -1, 5: 1, 6: -1})
+        self.assertEqual(config.directions, {4: -1, 5: -1, 6: 1})
+
+    def test_forward_rear_wheels_use_same_physical_direction(self) -> None:
+        config = car.CarConfig()
+        forward = car.motion_vector(car.Motion.FORWARD, config)
+        rear_rpm = car.wheel_rpm(config, *forward)
+        raw = {
+            servo_id: car.rpm_to_raw(rear_rpm[servo_id]) * config.directions[servo_id]
+            for servo_id in (config.rear_left_id, config.rear_right_id)
+        }
+        self.assertGreater(raw[config.rear_left_id], 0)
+        self.assertGreater(raw[config.rear_right_id], 0)
+
+    def test_backward_rear_wheels_reverse_forward_direction(self) -> None:
+        config = car.CarConfig()
+        backward = car.motion_vector(car.Motion.BACKWARD, config)
+        rear_rpm = car.wheel_rpm(config, *backward)
+        raw = {
+            servo_id: car.rpm_to_raw(rear_rpm[servo_id]) * config.directions[servo_id]
+            for servo_id in (config.rear_left_id, config.rear_right_id)
+        }
+        self.assertLess(raw[config.rear_left_id], 0)
+        self.assertLess(raw[config.rear_right_id], 0)
+
+    def test_forward_and_backward_keep_front_wheel_still(self) -> None:
+        config = car.CarConfig()
+        for motion in (car.Motion.FORWARD, car.Motion.BACKWARD):
+            speeds = car.wheel_rpm(config, *car.motion_vector(motion, config))
+            self.assertAlmostEqual(speeds[config.front_id], 0.0, places=6)
 
     def test_wheel_kinematics_uses_configured_ids(self) -> None:
         config = car.CarConfig()

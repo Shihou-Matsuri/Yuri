@@ -6,7 +6,7 @@
 > 支持离线 mock 演示与真机连接（复用 YuriChassis/YuriArm 传输层，不绕过 SOUL 安全语义）。
 
 有线相机车默认映射：`ID4=前中`、`ID5=后左`、`ID6=后右`；
-方向为前中反向、后左正向、后右反向。
+方向为前中反向、后左反向、后右正向；前进时后左/后右同向、后退相反，前中轮保持 0 速。
 
 ## 结构
 
@@ -19,7 +19,7 @@ YuriConsole/
     └── src/
         ├── theme.js      # 花信(浅)/祭(深) 主题令牌 -> naive themeOverrides + CSS 变量
         ├── stores/console.js   # Pinia：状态轮询 / 指令 API
-        └── components/   # 五区面板 + 状态点
+        └── components/   # 六区面板 + 状态点
 ```
 
 ## 运行
