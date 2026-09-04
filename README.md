@@ -116,3 +116,4 @@ $HOME/.arduino-cli/arduino-cli.exe upload -p COM8 --fqbn esp32:esp32:esp32s3:CDC
 - `docs/ESP32_CAR_TASK.md`：ESP32 遥控小车任务
 - `docs/REMOTE_CONSOLE_REQ.md`：综合遥控台需求 + MatsuriVoice GUI 风格规范（U1 定稿）
 - `docs/ROADMAP.md`：总体路线
+- `docs/CAMERA_CAR_CALIBRATION.md`：CameraCar 舵机校准进度与步骤

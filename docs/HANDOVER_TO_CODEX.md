@@ -1,4 +1,4 @@
-# 交接文档 — 给 Codex（更新 2026-09-04 晚）
+# 交接文档 — 给 Codex（更新 2026-09-04，相机车校准进行中）
 
 > 本仓库 `Shihou-Matsuri/Yuri`（私有 main）。给下一个会话：先读本文件 + `SOUL.md` + `README.md`，
 > 再动任何代码。仓库根：本仓库根目录（git 凭据已配，s0lo201）。
@@ -8,7 +8,11 @@
 - **机械臂遥操作 / 轮子 / 双控（CLI 与 exe）✅ 真机验证**（dual_remote 修复过 stop/exit/E 三 bug）。
 - **YuriConsole 综合遥控台 GUI（U2）功能完成**：A–E 五区 + F 有线相机小车独立页签、MatsuriVoice
   花信/祭双主题、无线小车手柄（X/Y 顺逆转、A 恢复、B 停、LB/RB 夹爪）、右摇杆可切换“控机械臂”
-  （pan/lift/elbow 三轴速率，十字键前后）+ 单 exe。**mock 全链路可用；真机全功能回归待做。**
+  （pan/lift/elbow 三轴速率，十字键前后）+ 单 exe。
+- **2026-09-04 已修复“连得上但控制不了、只有键盘”**：YuriConsole 手柄改为后端 XInput，
+  F 有线车支持 COM 下拉、键盘/手柄切换、连续摇杆速度；`YuriConsole.exe` 已重建并推送。
+- **相机车舵机重新校准未完成**：已逐 ID 扫描到 4/5/6，`ID4` 已做过一次低速点动，
+  用户尚未确认位置和方向。必须先完成 `docs/CAMERA_CAR_CALIBRATION.md` 的流程。
 - 下次接手的会话请用 `docs/NEXT_SESSION_PROMPT.md` 的提示词启动。
 
 ## 1. 架构（简短）
@@ -26,6 +30,7 @@
 | `SOUL.md` | 设计灵魂 + 血泪教训（必读） |
 | `YuriArm/` | 固件 `firmware/esp32s3_exec/` + `yuriarm/` + `tools/leader_remote.py`（臂单控 CLI） |
 | `YuriChassis/` | `car_remote.py` / `dual_remote.py`（无线 CLI）、`camera_car_drive.py`+GUI（有线相机车）、`kiwi_drive.py` |
+| `YuriChassis/camera_car_gamepad.py` | Windows XInput 手柄后端，供 YuriConsole 使用 |
 | `YuriConsole/` | **遥控台 GUI**：`backend/{console_core,main,wired_car}.py` + `frontend/`（Vue3+Vite+Naive UI+Pinia）；`release/YuriConsole.exe` |
 | `docs/gui-reference/` | MatsuriVoice 花信/祭主题参考源码（风格基线） |
 | `docs/REMOTE_CONSOLE_REQ.md` | 遥控台需求 + 风格规范（U1 定稿） |
@@ -75,13 +80,15 @@ cd YuriChassis
 - YuriConsole 真机全功能回归未做；D 视觉（YuriEye）未接入；B 脚本化 move_joints 步进未做。
 - 从动臂/主动臂供电接触不良史：先查供电再查代码。夹爪 gripper raw [2045,3479] 勿改；estop_load=2000。
 - `build/`、`dist/`、`*.spec`、`lerobot_venv312/`、`YuriEye/.venv/` 均已 gitignore；新增产物注意保持忽略。
+- **CameraCar 舵机映射/方向尚未最终确认**：用户正在重校准，当前表格见
+  `docs/CAMERA_CAR_CALIBRATION.md`。
 
 ## 7. 下一步候选（未定优先级）
 
-1. YuriConsole 真机回归：无线小车手柄（X/Y/A/B/LB/RB）、右摇杆控臂三轴方向、夹爪、CameraCar 有线车。
-2. 手柄控臂方向真机校准（或加反向开关）。
-3. D 视觉区接 YuriEye（V1）。
-4. B 区脚本化关节步进。
-5. pywebview 壳 + 单 exe 全流程文档化（已有 exe 可参考 build 命令）。
+1. **完成 CameraCar 舵机校准并写回映射/方向**，见 `docs/CAMERA_CAR_CALIBRATION.md`。
+2. YuriConsole 真机回归：无线小车手柄（X/Y/A/B/LB/RB）、右摇杆控臂三轴方向、夹爪、CameraCar 有线车。
+3. 手柄控臂方向真机校准（或加反向开关）。
+4. D 视觉区接 YuriEye（V1）。
+5. B 区脚本化关节步进。
 
 > 新会话请复制 `docs/NEXT_SESSION_PROMPT.md` 作为起始提示词。

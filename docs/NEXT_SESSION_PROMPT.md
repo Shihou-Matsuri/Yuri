@@ -4,35 +4,69 @@
 
 ---
 
-你接手 Yuri 机器人项目（Windows 本机，ESP32-S3 无线执行端：机械臂 + 三轮小车；另有一台 USB 直连的有线相机小车 CameraCar）。
-工作目录 = 本仓库根（私有 git main，账号 s0lo201，凭据已配；远程 Shihou-Matsuri/Yuri）。
+你接手 Yuri 机器人项目。工作目录 = 本仓库根（私有 git main，账号 s0lo201，凭据已配；
+远程 `Shihou-Matsuri/Yuri`）。
 
 先做且只做：
-1. 读 docs/HANDOVER_TO_CODEX.md（交接现状与约束）
-2. 读 SOUL.md（设计决策与血泪教训，必读）
-3. 读 README.md 与 docs/REMOTE_CONSOLE_REQ.md、docs/gui-reference/README.md（遥控台需求与 MatsuriVoice 风格基线）
+1. 读 `docs/HANDOVER_TO_CODEX.md`（交接现状与约束）
+2. 读 `SOUL.md`（设计决策与血泪教训，必读）
+3. 读 `README.md` 与 `docs/CAMERA_CAR_CALIBRATION.md`（当前 CameraCar 校准进度）
+4. 读 `docs/REMOTE_CONSOLE_REQ.md`、`docs/gui-reference/README.md`（遥控台需求与风格基线）
 
 当前状态（2026-09-04）：
-- 机械臂遥操作 / 轮子 / 双控（CLI + exe）真机验证通过；无 GUI 命令行版本勿改（dual_remote.py / car_remote.py）。
-- YuriConsole 综合遥控台 GUI（Vue3+Naive UI+Pinia + FastAPI + pywebview 壳单 exe）功能完成：A–E 五区、F 有线相机小车独立页签、花信/祭双主题、无线小车手柄（X/Y 顺逆转、A 恢复、B 停、LB/RB 夹爪、右摇杆可切换“控机械臂”：右摇杆上下=shoulder_lift、左右=shoulder_pan、十字键上下=elbow_flex，速率模式）。mock 全链路可用，真机全功能回归待做。
-- venv 在仓库根 lerobot_venv312/（python.exe 是 venvlauncher，0 字节损坏用 uv python 的 venvlauncher.exe 修复，勿换完整 exe）。
-- 环境重建/uv 安装见根 ENVIRONMENT.md；YuriEye ML 用 YuriEye/.venv 独立 GPU venv。
-- 串口：主动臂 COM7、ESP32 COM8@115200、有线相机车默认 COM21@1M。ESP32 单 TCP 客户端，重跑前先按 RESET。
-- 文档/命令默认从仓库根执行，venv 用相对路径（子目录内 `..\lerobot_venv312\Scripts\python.exe`）；旧 `E:\Anaconda` 是合作者 conda 示例勿改。
-- 大文件（YuriConsole/release/YuriConsole.exe）走 Git LFS（clone 需 git-lfs）；build/dist/*.spec/venv 已 gitignore。
+- 机械臂遥操作 / 轮子 / 双控（CLI + exe）真机验证通过；无 GUI 命令行版本请勿改
+  `dual_remote.py` / `car_remote.py`。
+- YuriConsole 综合遥控台 GUI（Vue3 + Naive UI + Pinia + FastAPI + pywebview 壳单 exe）
+  功能完成，已修复“连得上但控制不了、只有键盘”：
+  - 手柄状态改由后端 Windows XInput 读取，不依赖浏览器 Gamepad API
+  - F 有线相机小车支持 COM 下拉、刷新端口、键盘/手柄切换、连续摇杆速度
+  - 新 `YuriConsole.exe` 已构建并通过归档/API验证，发布在 `YuriConsole/release/`
+- **CameraCar 舵机重新校准未完成**：
+  - 默认 COM21 @1M
+  - 只读扫描确认在线 ID：`4、5、6`（`254` 忽略）
+  - 上一版映射为 `ID5=前中`、`ID6=后左`、`ID4=后右`
+  - `ID4` 已于低速点动 2 秒，但用户尚未确认位置和方向
+
+下一步（按顺序，不要跳步）：
+
+1. 先向用户确认：`COM21` 是否在线、车体是否已抬空/允许低速动作。
+2. 只读扫描确认当前实际 ID：
+   ```powershell
+   .\lerobot_venv312\Scripts\python.exe .\YuriChassis\camera_car_drive.py --port COM21 --scan
+   ```
+3. 单独点动 `ID4`，结束后必须停轮并关扭矩：
+   ```powershell
+   .\lerobot_venv312\Scripts\python.exe .\YuriChassis\camera_car_drive.py --port COM21 --one-wheel 4 --duration 2.0 --test-rpm 20
+   ```
+4. 等待用户确认 `ID4` 是“前中 / 后左 / 后右”，以及正转方向是否正确。
+5. 用同样方式依次测 `ID5`、`ID6`，每测完一个等用户确认，不要连续跑。
+6. 三个 ID 都确认后，把结果写入 `YuriChassis/camera_car_drive.py`：
+   - `front_id`
+   - `rear_left_id`
+   - `rear_right_id`
+   - `directions`
+7. 更新 `YuriChassis/README.md`、`YuriConsole/README.md` 和校准表。
+8. 运行：
+   ```powershell
+   .\lerobot_venv312\Scripts\python.exe -m unittest discover -s YuriChassis\tests -v
+   cd YuriConsole/frontend
+   npm.cmd run build
+   ```
+9. 若前端/后端映射改变，重建 `YuriConsole.exe`；更新 SHA256。
+10. 提交推送，并更新 `docs/HANDOVER_TO_CODEX.md` 和 `docs/NEXT_SESSION_PROMPT.md`。
 
 硬性约束：
-- 只用简体中文回复，术语保留英文（teleop_joints/watchdog 等），惜字如金，禁吹捧，不确定就说不确定、禁止编造。
-- 改码前全局兼容检查，禁硬编码/临时逻辑，列技术债与回归风险；文档路径用相对。
-- git 提交：s0lo201，标题 ≤50 字符祈使句，正文 what/why。
+- 只用简体中文回复，术语保留英文；不确定就说不确定，禁止编造。
+- 改码前全局兼容检查，禁硬编码/临时逻辑；文档路径用相对。
+- git：s0lo201；标题 ≤50 字符祈使句；正文 what/why。
 - 真机动作（烧录、驱动舵机）先经用户确认。
-- 每次改完做全项目 review 并自查（.py 语法、前后端一致性、文档同步）。
+- 每次改完做全项目 review 并自查（Python 语法、前后端一致性、文档同步）。
 
-当前待办候选（问用户优先级）：
-1. YuriConsole 真机全功能回归（手柄、右摇杆控臂三轴方向、夹爪、CameraCar）
-2. 手柄控臂方向真机校准（pan/lift/elbow 符号默认值，可能需反向开关）
-3. D 视觉区接 YuriEye（V1）
-4. B 区脚本化关节步进
-5. pywebview 壳 + 单 exe 重建流程文档化
+当前待办优先级：
+1. 完成 CameraCar 舵机校准并写回映射/方向。
+2. YuriConsole 真机全功能回归（手柄、夹爪、CameraCar）。
+3. 手柄控臂方向真机校准。
+4. D 视觉区接 YuriEye。
+5. B 区脚本化关节步进。
 
-开始前把仓库 fetch 到最新（origin/main），确认工作树干净后动手。
+开始前把仓库 fetch 到最新 `origin/main`，确认工作树干净后动手。
