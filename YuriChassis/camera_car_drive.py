@@ -43,9 +43,9 @@ class Motion(Enum):
 
 @dataclass
 class CarConfig:
-    front_id: int = 5
-    rear_left_id: int = 6
-    rear_right_id: int = 4
+    front_id: int = 4
+    rear_left_id: int = 5
+    rear_right_id: int = 6
     front_angle_deg: float = 0.0
     rear_left_angle_deg: float = 225.0
     rear_right_angle_deg: float = 135.0
@@ -57,10 +57,11 @@ class CarConfig:
     directions: dict[int, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        # 2026-09-04 真机校准：ID4 前中、ID5 后左、ID6 后右。
         if not self.directions:
             self.directions = {
-                self.front_id: 1,
-                self.rear_left_id: -1,
+                self.front_id: -1,
+                self.rear_left_id: 1,
                 self.rear_right_id: -1,
             }
 
@@ -78,8 +79,8 @@ class CarConfig:
 
     def with_directions(
         self,
-        front_reversed: bool = False,
-        rear_left_reversed: bool = True,
+        front_reversed: bool = True,
+        rear_left_reversed: bool = False,
         rear_right_reversed: bool = True,
     ) -> CarConfig:
         self.directions = {
@@ -91,10 +92,16 @@ class CarConfig:
 
 
 def print_mapping(config: CarConfig) -> None:
+    def label(sign: int) -> str:
+        return "反" if sign < 0 else "正"
+
+    front = label(config.directions.get(config.front_id, 1))
+    rear_left = label(config.directions.get(config.rear_left_id, 1))
+    rear_right = label(config.directions.get(config.rear_right_id, 1))
     print(
         f"舵机映射: 前中=ID{config.front_id}, "
         f"后左=ID{config.rear_left_id}, 后右=ID{config.rear_right_id} | "
-        f"方向: 前正, 后左反, 后右反"
+        f"方向: 前{front}, 后左{rear_left}, 后右{rear_right}"
     )
 
 
@@ -230,7 +237,9 @@ def one_wheel_test(
     if not feetech.ping(ser, servo_id):
         raise RuntimeError(f"舵机 ID {servo_id} 无应答")
     init_servo(ser, servo_id)
-    print(f"让 ID {servo_id} 正转 {duration_s:.1f}s ……")
+    direction = config.directions.get(servo_id, 1)
+    raw = rpm_to_raw(config.test_rpm) * direction
+    print(f"让 ID {servo_id} 逻辑正转 {duration_s:.1f}s（原始速度 {raw}）……")
     set_wheel_rpm(ser, config, servo_id, config.test_rpm)
     time.sleep(duration_s)
     set_wheel_rpm(ser, config, servo_id, 0.0)
@@ -281,26 +290,47 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="有线相机小车键盘控制")
     parser.add_argument("--port", default=os.getenv("CAMERA_CAR_PORT", DEFAULT_PORT))
     parser.add_argument("--baud", type=int, default=BAUD)
-    parser.add_argument("--front-id", type=int, default=5, help="前方中心舵机 ID")
-    parser.add_argument("--rear-left-id", type=int, default=6, help="后方左侧舵机 ID")
-    parser.add_argument("--rear-right-id", type=int, default=4, help="后方右侧舵机 ID")
+    parser.add_argument("--front-id", type=int, default=4, help="前方中心舵机 ID")
+    parser.add_argument("--rear-left-id", type=int, default=5, help="后方左侧舵机 ID")
+    parser.add_argument("--rear-right-id", type=int, default=6, help="后方右侧舵机 ID")
     parser.add_argument(
         "--front-reversed",
+        dest="front_reversed",
         action="store_true",
-        default=False,
-        help="前轮反向（默认前轮正向）",
+        default=True,
+        help="前轮反向（当前默认反向）",
+    )
+    parser.add_argument(
+        "--normal-front",
+        dest="front_reversed",
+        action="store_false",
+        help="前轮正向（覆盖默认反向）",
     )
     parser.add_argument(
         "--normal-rear-left",
-        action="store_true",
+        dest="rear_left_reversed",
+        action="store_false",
         default=False,
-        help="后左轮正向（默认后左反向）",
+        help="后左轮正向（当前默认正向）",
+    )
+    parser.add_argument(
+        "--rear-left-reversed",
+        dest="rear_left_reversed",
+        action="store_true",
+        help="后左轮反向",
     )
     parser.add_argument(
         "--normal-rear-right",
+        dest="rear_right_reversed",
+        action="store_false",
+        default=True,
+        help="后右轮正向（覆盖默认反向）",
+    )
+    parser.add_argument(
+        "--rear-right-reversed",
+        dest="rear_right_reversed",
         action="store_true",
-        default=False,
-        help="后右轮正向（默认后右反向）",
+        help="后右轮反向",
     )
     parser.add_argument(
         "--front-angle",
@@ -404,8 +434,8 @@ def main() -> int:
         test_rpm=args.test_rpm,
     ).with_directions(
         front_reversed=args.front_reversed,
-        rear_left_reversed=not args.normal_rear_left,
-        rear_right_reversed=not args.normal_rear_right,
+        rear_left_reversed=args.rear_left_reversed,
+        rear_right_reversed=args.rear_right_reversed,
     )
     print_mapping(config)
 

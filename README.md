@@ -13,7 +13,7 @@
 | `YuriChassis/` | 三轮 kiwi 底盘：运动学 + WiFi 键盘遥控（`car_remote.py` / `dual_remote.py` 臂+轮同控） |
 | `YuriConsole/` | 综合遥控台 GUI（Vue3 + Naive UI，花信/祭双主题；规范见 `docs/REMOTE_CONSOLE_REQ.md`） |
 | `YuriEye/` | 彩色立方体识别（YOLOv8 + 相机标定），感知层 |
-| `docs/REMOTE_CONSOLE_REQ.md` | 综合遥控台需求与 MatsuriVoice GUI 风格规范（U1 定稿，U2 待实现） |
+| `docs/REMOTE_CONSOLE_REQ.md` | 综合遥控台需求与 MatsuriVoice GUI 风格规范（U1 定稿，U2 功能完成） |
 | `docs/gui-reference/` | MatsuriVoice 风格参考：双主题源码 + 页面样板 + 移植说明 |
 | `LeKiwiTeleop/` | LeKiwi 有线主从遥操作参考（独立文档，非本架构） |
 | `SOUL.md` | **设计灵魂与教训，先读** |
@@ -26,6 +26,7 @@
 | **主动臂 → 从动臂遥操作（teleop_joints 直写）** | ✅ 真机验证：小幅/大幅/多关节跟手，不卡死 |
 | 小车 WiFi 键盘遥控（car_drive 电机恒速） | ✅ 真机验证（含自动重连） |
 | **机械臂 + 小车同时控制（dual_remote）** | ✅ 真机验证：臂跟手 + 轮键盘同跑；空格停 / E 轮子急停 / Q 刹停退出 |
+| 有线相机车舵机映射与方向 | ✅ 校准完成：ID4 前中、ID5 后左、ID6 后右 |
 | BLE 通道 | 🔇 已禁用（用户决策：只留 WiFi） |
 | YuriEye 视觉识别 | 🔜 待与机械臂集成 |
 | 综合遥控台 GUI（YuriConsole） | 🟡 U2 功能完成：A–F 六区（F=CameraCar 独立页签）+ 花信/祭主题 + 手柄（含控臂三轴）+ 单 exe；mock 可用，真机全功能回归待做 |

@@ -52,7 +52,7 @@
       <span class="hint">{{ motionText }}</span>
     </n-space>
     <p class="hint" style="margin:0">
-      有线相机小车：USB 直连 Feetech（三轮 ID5/6/4，默认 COM21 @1M），与上方 ESP32 无线链路互相独立。
+      有线相机小车：USB 直连 Feetech（三轮 ID4 前中 / ID5 后左 / ID6 后右，默认 COM21 @1M），与上方 ESP32 无线链路互相独立。
       操作方式沿用上方选择（点按锁定/按住）。键盘方向作用于无线小车区，本区请用按钮。E 后按方向自动恢复扭矩。
     </p>
   </n-space>

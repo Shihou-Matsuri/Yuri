@@ -45,6 +45,9 @@ class CameraCarGUI:
             f"后左=ID{self.config.rear_left_id}  "
             f"后右=ID{self.config.rear_right_id}"
         )
+        self.reverse_front_var = tk.BooleanVar(
+            value=self.config.directions.get(self.config.front_id, 1) == -1
+        )
         self.reverse_rear_left_var = tk.BooleanVar(
             value=self.config.directions.get(self.config.rear_left_id, 1) == -1
         )
@@ -162,13 +165,19 @@ class CameraCarGUI:
         adjust.pack(fill="x")
         ttk.Checkbutton(
             adjust,
-            text="后左反向 ID6",
+            text=f"前中反向 ID{self.config.front_id}",
+            variable=self.reverse_front_var,
+            command=self._apply_reverse_toggles,
+        ).pack(side="left", padx=(0, 14))
+        ttk.Checkbutton(
+            adjust,
+            text=f"后左反向 ID{self.config.rear_left_id}",
             variable=self.reverse_rear_left_var,
             command=self._apply_reverse_toggles,
         ).pack(side="left", padx=(0, 14))
         ttk.Checkbutton(
             adjust,
-            text="后右反向 ID4",
+            text=f"后右反向 ID{self.config.rear_right_id}",
             variable=self.reverse_rear_right_var,
             command=self._apply_reverse_toggles,
         ).pack(side="left")
@@ -395,11 +404,15 @@ class CameraCarGUI:
 
     def _apply_reverse_toggles(self) -> None:
         self.stop()
+        self.config.directions[self.config.front_id] = -1 if self.reverse_front_var.get() else 1
         self.config.directions[self.config.rear_left_id] = -1 if self.reverse_rear_left_var.get() else 1
         self.config.directions[self.config.rear_right_id] = -1 if self.reverse_rear_right_var.get() else 1
+        front = "是" if self.reverse_front_var.get() else "否"
         left = "是" if self.reverse_rear_left_var.get() else "否"
         right = "是" if self.reverse_rear_right_var.get() else "否"
-        self.status_var.set(f"方向设置已更新：后左反={left}，后右反={right}")
+        self.status_var.set(
+            f"方向设置已更新：前中反={front}，后左反={left}，后右反={right}"
+        )
 
     def close(self) -> None:
         self._polling = False

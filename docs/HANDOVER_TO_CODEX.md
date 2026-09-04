@@ -1,4 +1,4 @@
-# 交接文档 — 给 Codex（更新 2026-09-04，相机车校准进行中）
+# 交接文档 — 给 Codex（更新 2026-09-04，相机车校准完成）
 
 > 本仓库 `Shihou-Matsuri/Yuri`（私有 main）。给下一个会话：先读本文件 + `SOUL.md` + `README.md`，
 > 再动任何代码。仓库根：本仓库根目录（git 凭据已配，s0lo201）。
@@ -6,13 +6,13 @@
 ## 0. 一句话现状
 
 - **机械臂遥操作 / 轮子 / 双控（CLI 与 exe）✅ 真机验证**（dual_remote 修复过 stop/exit/E 三 bug）。
-- **YuriConsole 综合遥控台 GUI（U2）功能完成**：A–E 五区 + F 有线相机小车独立页签、MatsuriVoice
+- **YuriConsole 综合遥控台 GUI（U2）功能完成**：A–F 六区（F=有线相机小车独立页签）、MatsuriVoice
   花信/祭双主题、无线小车手柄（X/Y 顺逆转、A 恢复、B 停、LB/RB 夹爪）、右摇杆可切换“控机械臂”
   （pan/lift/elbow 三轴速率，十字键前后）+ 单 exe。
 - **2026-09-04 已修复“连得上但控制不了、只有键盘”**：YuriConsole 手柄改为后端 XInput，
   F 有线车支持 COM 下拉、键盘/手柄切换、连续摇杆速度；`YuriConsole.exe` 已重建并推送。
-- **相机车舵机重新校准未完成**：已逐 ID 扫描到 4/5/6，`ID4` 已做过一次低速点动，
-  用户尚未确认位置和方向。必须先完成 `docs/CAMERA_CAR_CALIBRATION.md` 的流程。
+- **CameraCar 舵机校准完成**：`ID4=前中`、`ID5=后左`、`ID6=后右`；
+  对应 `directions={4:-1, 5:1, 6:-1}`，已写回配置、文档并重建相关发布包。
 - 下次接手的会话请用 `docs/NEXT_SESSION_PROMPT.md` 的提示词启动。
 
 ## 1. 架构（简短）
@@ -20,7 +20,7 @@
 笔记本 →（WiFi TCP 192.168.4.1:8765 / USB COM8@115200）→ ESP32-S3：
   UART1 → 从动臂 6×STS3215（遥操作 teleop_joints 直写，主动臂 COM7 读取）
   UART2 → 无线小车 3 舵机 ID7/8/9（car_drive 电机恒速）
-另有 **有线相机小车（CameraCar）**：USB 直连 Feetech 总线（默认 COM21@1M，ID5 前中/6 后左/4 后右），
+另有 **有线相机小车（CameraCar）**：USB 直连 Feetech 总线（默认 COM21@1M，ID4 前中/ID5 后左/ID6 后右），
 独立于 ESP32 链路。YuriEye 视觉未接入 GUI（V1 待做）。
 
 ## 2. 代码地图
@@ -80,15 +80,14 @@ cd YuriChassis
 - YuriConsole 真机全功能回归未做；D 视觉（YuriEye）未接入；B 脚本化 move_joints 步进未做。
 - 从动臂/主动臂供电接触不良史：先查供电再查代码。夹爪 gripper raw [2045,3479] 勿改；estop_load=2000。
 - `build/`、`dist/`、`*.spec`、`lerobot_venv312/`、`YuriEye/.venv/` 均已 gitignore；新增产物注意保持忽略。
-- **CameraCar 舵机映射/方向尚未最终确认**：用户正在重校准，当前表格见
+- CameraCar 默认映射与方向已真机确认；再次重校准时参考
   `docs/CAMERA_CAR_CALIBRATION.md`。
 
 ## 7. 下一步候选（未定优先级）
 
-1. **完成 CameraCar 舵机校准并写回映射/方向**，见 `docs/CAMERA_CAR_CALIBRATION.md`。
-2. YuriConsole 真机回归：无线小车手柄（X/Y/A/B/LB/RB）、右摇杆控臂三轴方向、夹爪、CameraCar 有线车。
-3. 手柄控臂方向真机校准（或加反向开关）。
-4. D 视觉区接 YuriEye（V1）。
-5. B 区脚本化关节步进。
+1. YuriConsole 真机回归：无线小车手柄（X/Y/A/B/LB/RB）、右摇杆控臂三轴方向、夹爪、CameraCar 有线车。
+2. 手柄控臂方向真机校准（或加反向开关）。
+3. D 视觉区接 YuriEye（V1）。
+4. B 区脚本化关节步进。
 
 > 新会话请复制 `docs/NEXT_SESSION_PROMPT.md` 作为起始提示词。

@@ -21,39 +21,23 @@
   - 手柄状态改由后端 Windows XInput 读取，不依赖浏览器 Gamepad API
   - F 有线相机小车支持 COM 下拉、刷新端口、键盘/手柄切换、连续摇杆速度
   - 新 `YuriConsole.exe` 已构建并通过归档/API验证，发布在 `YuriConsole/release/`
-- **CameraCar 舵机重新校准未完成**：
+- CameraCar 舵机校准已完成：
   - 默认 COM21 @1M
-  - 只读扫描确认在线 ID：`4、5、6`（`254` 忽略）
-  - 上一版映射为 `ID5=前中`、`ID6=后左`、`ID4=后右`
-  - `ID4` 已于低速点动 2 秒，但用户尚未确认位置和方向
+  - 确认在线 ID：`4、5、6`（`254` 忽略）
+  - 确认映射：`ID4=前中`、`ID5=后左`、`ID6=后右`
+  - 确认方向：`ID4=顺时针`、`ID5=逆时针`、`ID6=顺时针`
+  - 默认 `directions={4:-1, 5:1, 6:-1}`
 
-下一步（按顺序，不要跳步）：
+下一步（未定优先级）：
 
-1. 先向用户确认：`COM21` 是否在线、车体是否已抬空/允许低速动作。
-2. 只读扫描确认当前实际 ID：
-   ```powershell
-   .\lerobot_venv312\Scripts\python.exe .\YuriChassis\camera_car_drive.py --port COM21 --scan
-   ```
-3. 单独点动 `ID4`，结束后必须停轮并关扭矩：
-   ```powershell
-   .\lerobot_venv312\Scripts\python.exe .\YuriChassis\camera_car_drive.py --port COM21 --one-wheel 4 --duration 2.0 --test-rpm 20
-   ```
-4. 等待用户确认 `ID4` 是“前中 / 后左 / 后右”，以及正转方向是否正确。
-5. 用同样方式依次测 `ID5`、`ID6`，每测完一个等用户确认，不要连续跑。
-6. 三个 ID 都确认后，把结果写入 `YuriChassis/camera_car_drive.py`：
-   - `front_id`
-   - `rear_left_id`
-   - `rear_right_id`
-   - `directions`
-7. 更新 `YuriChassis/README.md`、`YuriConsole/README.md` 和校准表。
-8. 运行：
-   ```powershell
-   .\lerobot_venv312\Scripts\python.exe -m unittest discover -s YuriChassis\tests -v
-   cd YuriConsole/frontend
-   npm.cmd run build
-   ```
-9. 若前端/后端映射改变，重建 `YuriConsole.exe`；更新 SHA256。
-10. 提交推送，并更新 `docs/HANDOVER_TO_CODEX.md` 和 `docs/NEXT_SESSION_PROMPT.md`。
+1. YuriConsole 真机全功能回归：无线小车手柄（X/Y/A/B/LB/RB）、右摇杆控臂三轴方向、夹爪、
+   CameraCar 有线车 USB/手柄/连续速度。
+2. 手柄控臂方向真机校准，或加反向开关。
+3. D 视觉区接入 YuriEye。
+4. B 区脚本化 `move_joints` / 单关节步进。
+
+若用户要求重新校准 CameraCar，才执行 `docs/CAMERA_CAR_CALIBRATION.md` 的流程；
+每次真机点动前先获得用户确认。
 
 硬性约束：
 - 只用简体中文回复，术语保留英文；不确定就说不确定，禁止编造。
@@ -63,10 +47,9 @@
 - 每次改完做全项目 review 并自查（Python 语法、前后端一致性、文档同步）。
 
 当前待办优先级：
-1. 完成 CameraCar 舵机校准并写回映射/方向。
-2. YuriConsole 真机全功能回归（手柄、夹爪、CameraCar）。
-3. 手柄控臂方向真机校准。
-4. D 视觉区接 YuriEye。
-5. B 区脚本化关节步进。
+1. YuriConsole 真机全功能回归（手柄、夹爪、CameraCar）。
+2. 手柄控臂方向真机校准。
+3. D 视觉区接 YuriEye。
+4. B 区脚本化关节步进。
 
 开始前把仓库 fetch 到最新 `origin/main`，确认工作树干净后动手。

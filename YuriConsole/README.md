@@ -2,7 +2,11 @@
 
 > 需求与风格规范见 `docs/REMOTE_CONSOLE_REQ.md`（MatsuriVoice「花信/祭」双主题，U1 定稿）。
 > 当前为 **U2 MVP 骨架**：A 连接与状态 / B 机械臂 / C 小车 / D 视觉占位 / E 安全与日志，
+> F 有线相机小车独立页签，
 > 支持离线 mock 演示与真机连接（复用 YuriChassis/YuriArm 传输层，不绕过 SOUL 安全语义）。
+
+有线相机车默认映射：`ID4=前中`、`ID5=后左`、`ID6=后右`；
+方向为前中反向、后左正向、后右反向。
 
 ## 结构
 
@@ -56,14 +60,19 @@ cd frontend && npm run dev
 | POST | /api/arm/enabled | {enabled} 臂遥操作开关 |
 | GET | /api/logs | 日志（?level=info\|warn\|error） |
 | GET | /api/wired/ports | 有线相机车可用串口列表 |
+| POST | /api/wired/connect | 连接有线相机车 {port?} |
+| POST | /api/wired/disconnect | 断开有线相机车 |
+| POST | /api/wired/press | {key} 键盘方向 |
+| POST | /api/wired/release | 松开 -> 0 速 |
 | POST | /api/wired/vel | 有线相机车摇杆速度 {vx, vy, omega} |
+| POST | /api/wired/estop | 有线相机车急停 |
 
 ## 技术债 / 待办（U2 未完）
 
-- F 有线相机车现支持 COM 下拉、键盘按钮和 XInput 手柄；真机方向仍以现场标定为准。
+- F 有线相机车现支持 COM 下拉、键盘按钮和 XInput 手柄；舵机映射与方向已按现场标定写回。
 - D 视觉区为占位，YuriEye 接入未做（V1 里程碑）。
 - B 区脚本化 move_joints / 单关节步进未做（保留 CLI）。
 - 小车反向开关未接入（见 camera_car_drive 标定）。
 - pywebview 壳未实测（需本机 WebView2 Runtime）。
-- 单 exe 打包（pyinstaller 后端 + 前端产物）未做。
+- `YuriConsole.exe` 已发布至 `release/`，后端采用 pyinstaller，并随前端构建产物打包。
 - naive-ui 全量引入，JS ~1.45MB（后续可按需引入优化）。

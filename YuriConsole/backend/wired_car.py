@@ -1,7 +1,7 @@
 """有线相机小车（CameraCar）控制核心。
 
 独立于 ESP32 无线链路：USB 直连 Feetech 舵机总线（默认 COM21 @1M，
-三轮 ID5 前中 / ID6 后左 / ID4 后右），复用 YuriChassis/camera_car_drive
+三轮 ID4 前中 / ID5 后左 / ID6 后右），复用 YuriChassis/camera_car_drive
 的运动学与 feetech 协议（电机恒速模式）。单写者：独立 writer 线程独占该串口。
 
 语义（与 camera_car_drive 一致）：按住发车、无目标写 0 速刹停；E = 0 速 + 扭矩关；

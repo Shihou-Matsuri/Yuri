@@ -13,18 +13,22 @@ from camera_car_gamepad import GamepadSnapshot, normalize_axis
 
 
 class CameraCarConfigTest(unittest.TestCase):
-    def test_default_rear_wheels_are_reversed(self) -> None:
+    def test_default_directions_match_calibration(self) -> None:
         config = car.CarConfig()
-        self.assertEqual(config.directions, {5: 1, 6: -1, 4: -1})
+        self.assertEqual(config.directions, {4: -1, 5: 1, 6: -1})
+
+    def test_with_directions_defaults_match_calibration(self) -> None:
+        config = car.CarConfig().with_directions()
+        self.assertEqual(config.directions, {4: -1, 5: 1, 6: -1})
 
     def test_wheel_kinematics_uses_configured_ids(self) -> None:
         config = car.CarConfig()
         speeds = car.wheel_rpm(config, 0.05, 0.0, 0.0)
 
         self.assertEqual(set(speeds), {4, 5, 6})
-        self.assertAlmostEqual(speeds[5], 0.0, places=6)
-        self.assertGreater(speeds[6], 0.0)
-        self.assertLess(speeds[4], 0.0)
+        self.assertAlmostEqual(speeds[4], 0.0, places=6)
+        self.assertGreater(speeds[5], 0.0)
+        self.assertLess(speeds[6], 0.0)
 
     def test_stop_returns_zero_for_all_wheels(self) -> None:
         config = car.CarConfig()
@@ -54,7 +58,7 @@ class CameraCarSerialTest(unittest.TestCase):
         car.command(serial, config, car.Motion.FORWARD)
 
         self.assertEqual(len(serial.packets), 3)
-        self.assertEqual([packet[2] for packet in serial.packets], [5, 6, 4])
+        self.assertEqual([packet[2] for packet in serial.packets], [4, 5, 6])
 
     def test_stop_writes_zero_to_all_wheels(self) -> None:
         serial = car.FakeSerial()
@@ -63,7 +67,7 @@ class CameraCarSerialTest(unittest.TestCase):
         car.stop(serial, config)
 
         self.assertEqual(len(serial.packets), 3)
-        self.assertEqual([packet[2] for packet in serial.packets], [5, 6, 4])
+        self.assertEqual([packet[2] for packet in serial.packets], [4, 5, 6])
         for packet in serial.packets:
             self.assertEqual(packet[6:8], b"\x00\x00")
 
@@ -88,7 +92,7 @@ class CameraCarGamepadTest(unittest.TestCase):
         car.move(serial, config, 0.03, 0.0, 0.0)
 
         self.assertEqual(len(serial.packets), 3)
-        self.assertEqual([packet[2] for packet in serial.packets], [5, 6, 4])
+        self.assertEqual([packet[2] for packet in serial.packets], [4, 5, 6])
 
 
 if __name__ == "__main__":
