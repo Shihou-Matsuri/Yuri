@@ -171,6 +171,23 @@ def wired_ports() -> list[str]:
     return wired.list_ports()
 
 
+@app.get("/api/serial/ports")
+def serial_ports() -> list[dict]:
+    """枚举本机所有可用串口（主动臂口 / ESP32 串口共用）。"""
+    try:
+        from serial.tools import list_ports
+
+        out = []
+        for item in list_ports.comports():
+            hwid = (item.hwid or "").upper()
+            # USB 真串口不是蓝牙/虚拟(如 BTHENUM、Sangfor、Virtual)，标出来供前端优先选择
+            is_usb = "BTHENUM" not in hwid and "VIRTUAL" not in hwid
+            out.append({"device": item.device, "description": item.description or "", "is_usb": is_usb})
+        return out
+    except Exception:
+        return []
+
+
 @app.post("/api/wired/disconnect")
 def wired_disconnect() -> JSONResponse:
     wired.disconnect()

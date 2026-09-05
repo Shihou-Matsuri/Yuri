@@ -2,6 +2,9 @@
 
 机械臂 + 小车 + 摄像头协同的模块化机器人（基于 ESP32-S3 无线执行端）。
 
+> 南京医科大学医疗机器人课程实践项目（2026 年秋季）。本仓库作为课程项目归档，
+> 记录已完成的设计、实现与真机验证结果；开发到此为止，不再新增开发任务。
+
 > **动手前先读 [SOUL.md](SOUL.md)** —— 核心架构决策与血泪教训（遥操作直写、
 > 高频指令不回包、单实例锁、真机联调铁律）。
 
@@ -18,7 +21,7 @@
 | `LeKiwiTeleop/` | LeKiwi 有线主从遥操作参考（独立文档，非本架构） |
 | `SOUL.md` | **设计灵魂与教训，先读** |
 
-## 当前状态（2026-09-04）
+## 当前状态（2026-09-04 · 课程项目归档）
 
 | 模块 | 状态 |
 |---|---|
@@ -28,8 +31,8 @@
 | **机械臂 + 小车同时控制（dual_remote）** | ✅ 真机验证：臂跟手 + 轮键盘同跑；空格停 / E 轮子急停 / Q 刹停退出 |
 | 有线相机车舵机映射与方向 | ✅ 校准完成：ID4 前中、ID5 后左、ID6 后右 |
 | BLE 通道 | 🔇 已禁用（用户决策：只留 WiFi） |
-| YuriEye 视觉识别 | 🔜 待与机械臂集成 |
-| 综合遥控台 GUI（YuriConsole） | 🟡 U2 功能完成：A–F 六区（F=CameraCar 独立页签）+ 花信/祭主题 + 手柄（含控臂三轴）+ 单 exe；mock 可用，真机全功能回归待做 |
+| YuriEye 视觉识别 | ✅ 独立验证完成（YOLOv8m，mAP50 0.949）；未做整机抓取闭环集成 |
+| 综合遥控台 GUI（YuriConsole） | ✅ A–F 六区（F=CameraCar 独立页签）+ 花信/祭主题 + 手柄（含控臂三轴）+ 单 exe；串口自动枚举，mock 与真机模式可用 |
 
 ## 架构
 
@@ -109,7 +112,7 @@ $HOME/.arduino-cli/arduino-cli.exe upload -p COM8 --fqbn esp32:esp32:esp32s3:CDC
 ## 相关文档
 
 - `docs/HANDOVER_TO_CODEX.md`：交接现状（先读）
-- `docs/NEXT_SESSION_PROMPT.md`：给下一个 Codex 会话的启动提示词
+- `docs/NEXT_SESSION_PROMPT.md`：历史交接提示词（开发已收尾，仅归档参考）
 - `SOUL.md`：设计灵魂与教训（先读）
 - `YuriArm/docs/方案设计.md`：YuriArm 设计
 - `YuriArm/firmware/protocol.md`：ESP32 JSON 协议（含 teleop_joints）

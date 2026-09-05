@@ -99,7 +99,9 @@ def _make_leader(port: str, *, mock: bool):
             cfg_cls = getattr(mod, "SOLeaderTeleopConfig", None) or getattr(mod, "SOLeaderConfig", None)
             if leader_cls is None:
                 raise ImportError(f"{mod_name} 无 leader 类")
-            cfg = cfg_cls(port=port, use_degrees=False)
+            # id 决定标定文件名（so_leader/<id>.json）；用 lerobot_leader_arm 以复用已存标定，
+            # 否则 get_action() 会因无标定而报 "has no calibration registered"。
+            cfg = cfg_cls(port=port, use_degrees=False, id="lerobot_leader_arm")
             return leader_cls(cfg)
         except Exception as e:  # noqa: BLE001
             last_err = e

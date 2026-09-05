@@ -23,6 +23,8 @@ export const useConsole = defineStore('console', () => {
   // 小车方向操作模式：lock=点按锁定（按一下持续，空格/停停止）｜hold=按住移动、松手停
   const wiredPorts = ref([])
   const wiredPort = ref('COM21')
+  const serialPorts = ref([])   // 本机所有可用串口（主动臂 / ESP32 共用）
+  const leaderPorts = ref([])   // 主动臂候选口（默认=所有串口，见 refreshSerialPorts）
   const carMode = ref('lock')
   try { if (localStorage.getItem('mv-car-mode') === 'hold') carMode.value = 'hold' } catch { /* in-memory */ }
   function setCarMode(m) { carMode.value = m; try { localStorage.setItem('mv-car-mode', m) } catch { /* in-memory */ } }
@@ -46,6 +48,25 @@ export const useConsole = defineStore('console', () => {
     return r
   }
   async function disconnect() { await post('/api/disconnect'); await refresh() }
+  async function refreshSerialPorts() {
+    try {
+      const r = await (await fetch('/api/serial/ports')).json()
+      serialPorts.value = Array.isArray(r) ? r : []
+      leaderPorts.value = serialPorts.value.length ? serialPorts.value : ['COM7']
+      // 优先保留已选口；否则选第一个标记为 USB 真串口的（主动臂/ESP32），避免默认落到蓝牙口
+      const devices = serialPorts.value.map(p => (typeof p === 'string' ? p : p.device))
+      const prefer = (serialPorts.value.find(p => typeof p === 'object' && p && p.is_usb) || {}).device
+        || devices[0]
+      if (!leaderPort.value || !devices.includes(leaderPort.value)) {
+        leaderPort.value = prefer || 'COM7'
+      }
+      if (serialPort.value && devices.includes(serialPort.value)) {
+        // 保留用户当前 ESP32 串口选择
+      } else {
+        serialPort.value = prefer || (devices[0] || 'COM8')
+      }
+    } catch { /* 后端未起 */ }
+  }
   async function carPress(key) { await post('/api/car/press', { key }) }
   async function carRelease() { await post('/api/car/release') }
   async function carVel(vx, vy, omega) { await post('/api/car/vel', { vx, vy, omega }) }
@@ -78,7 +99,9 @@ export const useConsole = defineStore('console', () => {
   }
 
   return { state, logs, gamepad, linkSel, serialPort, leaderPort, logFilter, carMode, setCarMode, wiredPorts, wiredPort,
-    refresh, refreshLogs, connect, disconnect, carPress, carRelease, carVel, carEstop, globalEstop, resume, setArmEnabled,
+    serialPorts, leaderPorts,
+    refresh, refreshLogs, connect, disconnect, refreshSerialPorts,
+    carPress, carRelease, carVel, carEstop, globalEstop, resume, setArmEnabled,
     armPad, gripper,
     wiredConnect, wiredDisconnect, wiredPress, wiredRelease, wiredVel, wiredEstop, gamepadState,
     wiredRefreshPorts }

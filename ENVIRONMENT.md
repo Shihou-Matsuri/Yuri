@@ -36,10 +36,10 @@ uv pip install --python lerobot_venv312\Scripts\python.exe -r requirements.lock.
 > 锁文件用于“换机器快速恢复到已知可跑组合”。日常小工具无需逐项钉死，
 > 直接按“首次重建”安装即可。
 
-## 关于旧的 E:\Anaconda 环境
+## 关于历史合作者 conda 环境
 
-旧机/合作者曾在 `E:\Anaconda\envs` 建 `lerobot`、`yurieye` 两个 conda 环境（该盘仅存于部分本机）；
-本仓库不复制、不引用绝对路径。保留 `requirements.lock.txt` 仅为导出参考，避免丢失已知组合。
+早期合作者曾在本地 `Anaconda/envs` 建 `lerobot`、`yurieye` 两个 conda 环境（仅存在于旧机）；
+本仓库不复制、不引用机器绝对路径。保留 `requirements.lock.txt` 仅为导出参考，避免丢失已知组合。
 
 ## YuriEye ML（CUDA 12.8+）
 

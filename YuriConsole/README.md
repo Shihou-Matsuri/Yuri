@@ -1,8 +1,8 @@
 # Yuri 综合遥控台（YuriConsole）
 
 > 需求与风格规范见 `docs/REMOTE_CONSOLE_REQ.md`（MatsuriVoice「花信/祭」双主题，U1 定稿）。
-> 当前为 **U2 MVP 骨架**：A 连接与状态 / B 机械臂 / C 小车 / D 视觉占位 / E 安全与日志，
-> F 有线相机小车独立页签，
+> 课程项目收尾版：A 连接与状态 / B 机械臂 / C 小车 / D 视觉占位 / E 安全与日志，
+> F 有线相机小车独立页签；串口与主动臂口支持自动枚举下拉选择。
 > 支持离线 mock 演示与真机连接（复用 YuriChassis/YuriArm 传输层，不绕过 SOUL 安全语义）。
 
 有线相机车默认映射：`ID4=前中`、`ID5=后左`、`ID6=后右`；
@@ -66,13 +66,14 @@ cd frontend && npm run dev
 | POST | /api/wired/release | 松开 -> 0 速 |
 | POST | /api/wired/vel | 有线相机车摇杆速度 {vx, vy, omega} |
 | POST | /api/wired/estop | 有线相机车急停 |
+| GET | /api/serial/ports | 枚举本机可用串口（含 USB/蓝牙判定） |
 
-## 技术债 / 待办（U2 未完）
+## 收尾说明
 
-- F 有线相机车现支持 COM 下拉、键盘按钮和 XInput 手柄；舵机映射与方向已按现场标定写回。
-- D 视觉区为占位，YuriEye 接入未做（V1 里程碑）。
-- B 区脚本化 move_joints / 单关节步进未做（保留 CLI）。
-- 小车反向开关未接入（见 camera_car_drive 标定）。
-- pywebview 壳未实测（需本机 WebView2 Runtime）。
+- 已实现：A–F 六区、双主题、XInput 手柄、串口自动枚举、有线相机车 COM/键盘/手柄/连续速度；
+  主动臂与 ESP32 串口从本机可用串口中自动选择（优先 USB 真串口）。
+- 保持 CLI 兼容：脚本化 `move_joints` / 单关节步进仍走 `YuriArm` 命令行，GUI 不重复实现。
+- 未纳入本课程范围：YuriEye 视觉面板实机接入、小车反向开关可视化（配置在
+  `camera_car_drive` 标定文档中）、pywebview 壳真机实测。
 - `YuriConsole.exe` 已发布至 `release/`，后端采用 pyinstaller，并随前端构建产物打包。
-- naive-ui 全量引入，JS ~1.45MB（后续可按需引入优化）。
+- naive-ui 全量引入，JS ~1.45MB（性能优化不在课程范围内）。

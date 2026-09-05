@@ -24,3 +24,9 @@ lerobot_venv312/
 
 # uv 本地工具环境（YuriEye ML 用）
 YuriEye/.venv/
+
+# 课程实践收尾：本机临时/中间产物不提交
+.trash_ignore/
+YuriConsole/_srv.log*
+YuriConsole/ui_check_old.png
+YuriConsole/ui_check*.png

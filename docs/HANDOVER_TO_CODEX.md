@@ -1,7 +1,8 @@
-# 交接文档 — 给 Codex（更新 2026-09-04，相机车校准完成）
+# 历史交接文档 — 给 Codex（2026-09-04，相机车校准完成）
 
-> 本仓库 `Shihou-Matsuri/Yuri`（私有 main）。给下一个会话：先读本文件 + `SOUL.md` + `README.md`，
-> 再动任何代码。仓库根：本仓库根目录（git 凭据已配，s0lo201）。
+> 本文档是开发过程中的交接记录，现仅作归档参考。**项目开发已收尾**：
+> 本仓库为南京医科大学医疗机器人课程实践项目，后续不再安排新的开发会话。
+> 如需了解最终状态与运行方式，以 `README.md` 与各模块 README 为准。
 
 ## 0. 一句话现状
 
@@ -11,9 +12,11 @@
   （pan/lift/elbow 三轴速率，十字键前后）+ 单 exe。
 - **2026-09-04 已修复“连得上但控制不了、只有键盘”**：YuriConsole 手柄改为后端 XInput，
   F 有线车支持 COM 下拉、键盘/手柄切换、连续摇杆速度；`YuriConsole.exe` 已重建并推送。
+- **2026-09-04 收尾更新**：YuriConsole 主动臂/ESP32 串口自动枚举下拉；主动臂 leader
+  固定使用 `lerobot_leader_arm` 标定 id，复用已有标定；`YuriConsole.exe` 重新发布。
 - **CameraCar 舵机校准完成**：`ID4=前中`、`ID5=后左`、`ID6=后右`；
   对应 `directions={4:-1, 5:-1, 6:1}`；前进/后退时前中轮保持 0 速，后左/后右同向，已写回配置、文档并重建相关发布包。
-- 下次接手的会话请用 `docs/NEXT_SESSION_PROMPT.md` 的提示词启动。
+- 原交接提示词保存在 `docs/NEXT_SESSION_PROMPT.md`，仅归档参考，不再用于启动新会话。
 
 ## 1. 架构（简短）
 
@@ -41,7 +44,7 @@
   重建/装包见根 `ENVIRONMENT.md`（uv）。**python.exe 是 venvlauncher**，曾两次 0 字节损坏：
   修复 = 从 uv python `cpython-3.13.3-...\Lib\venv\scripts\nt\venvlauncher.exe` 复制改名。
 - 串口：主动臂 COM7、ESP32 COM8(115200)、有线相机车默认 COM21(1M)。
-- lerobot 源码在仓库外 editable（`pip show lerobot` 查位置）；旧 `E:\Anaconda\...` 是合作者 conda 示例，勿改、勿复制使用。
+- lerobot 源码在仓库外 editable（`pip show lerobot` 查位置）；早期合作者 conda 环境仅为历史示例，勿改、勿复制使用。
 - 前端：`YuriConsole/frontend`（node 22；npm 用 `npm.cmd` 避免 ps1 执行策略）。改前端后 `npm run build` 才进生产/exe。
 - 打包：`pyinstaller ... backend\main.py`（含 lerobot/torch ~200MB，release 走 **Git LFS**，.gitattributes 已 track）。
 - 文档命令默认从**仓库根**执行；venv 相对路径 `..\lerobot_venv312\Scripts\python.exe`（子目录内）或 `lerobot_venv312\Scripts\...`（根）。
@@ -65,7 +68,8 @@ cd YuriChassis
 
 - 只用简体中文回复；术语保留英文；惜字如金；禁吹捧；不确定就说不确定，禁止编造。
 - 写码前全局兼容检查；禁硬编码/临时逻辑；列技术债与回归风险；文档路径用相对。
-- 禁止把机器绝对路径（`C:\Users\*`、`E:\Anaconda\...`、`~/lerobot` 等）写回文档/代码；历史 E 盘说明仅限 ENVIRONMENT/交接文档。
+- 禁止把机器绝对路径写回文档/代码；历史机器环境说明仅保留在本历史交接文档与
+  `ENVIRONMENT.md` 中，最终 README 一律使用仓库相对路径。
 - git：s0lo201；标题 ≤50 字符祈使句；正文 what/why。
 - 真机动作（烧录、驱动舵机）先经用户确认。
 - 仓库大文件（YuriConsole/release/YuriConsole.exe 等）走 Git LFS，clone 需装 git-lfs。
@@ -83,11 +87,7 @@ cd YuriChassis
 - CameraCar 默认映射与方向已真机确认；再次重校准时参考
   `docs/CAMERA_CAR_CALIBRATION.md`。
 
-## 7. 下一步候选（未定优先级）
+## 7. 收尾说明
 
-1. YuriConsole 真机回归：无线小车手柄（X/Y/A/B/LB/RB）、右摇杆控臂三轴方向、夹爪、CameraCar 有线车。
-2. 手柄控臂方向真机校准（或加反向开关）。
-3. D 视觉区接 YuriEye（V1）。
-4. B 区脚本化关节步进。
-
-> 新会话请复制 `docs/NEXT_SESSION_PROMPT.md` 作为起始提示词。
+- 项目为南京医科大学医疗机器人课程实践项目，已完成阶段性设计与真机验证，开发到此为止。
+- 上述“下一步候选”不再作为开发任务推进；未集成项属于课程范围之外，保留在文档中供参考。

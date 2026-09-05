@@ -17,8 +17,8 @@ uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu
 uv pip install -r YuriEye\requirements.txt -r YuriEye\ml\requirements.txt
 ```
 
-旧本机曾有独立 conda 环境 `yurieye`（`E:\Anaconda`，Python 3.10 + torch cu128）；E 盘是历史/合作者示例，
-本仓库不再以绝对路径引用，推荐直接用上面的 uv 流程创建独立 GPU venv。
+旧机器曾有独立 conda 环境 `yurieye`（Python 3.10 + torch cu128）；这些是历史/合作者示例，
+本仓库不再以机器绝对路径引用，推荐直接用上面的 uv 流程创建独立 GPU venv。
 
 **PyTorch cu128（已验证流程）**：PyPI 默认是 CPU 版；直连 pytorch.org 大文件易断。
 推荐从上交/阿里云 pytorch-wheels 镜像下载轮子后本地安装：
